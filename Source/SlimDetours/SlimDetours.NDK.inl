@@ -74,9 +74,9 @@
 
 #endif
 
-#define NtGetCurrentProcessId() (NtCurrentTeb()->ClientId.UniqueProcess)
-#define NtGetCurrentThreadId() (NtCurrentTeb()->ClientId.UniqueThread)
+#define NtCurrentProcessId() ((HANDLE)ReadTeb(ClientId.UniqueProcess))
+#define NtCurrentThreadId() ((HANDLE)ReadTeb(ClientId.UniqueThread))
 #define NtGetProcessHeap() (NtCurrentPeb()->ProcessHeap)
-#define NtGetNtdllBase() (CONTAINING_RECORD(NtCurrentPeb()->Ldr->InInitializationOrderModuleList.Flink, LDR_DATA_TABLE_ENTRY, InInitializationOrderModuleList)->DllBase)
+#define NtGetNtdllBase() (CONTAINING_RECORD(NtCurrentPeb()->Ldr->InInitializationOrderModuleList.Flink, LDR_DATA_TABLE_ENTRY, InInitializationOrderLinks)->DllBase)
 
 #endif

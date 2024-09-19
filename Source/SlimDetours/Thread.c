@@ -39,7 +39,7 @@ _Try_alloc:
     }
 
     /* Find current process and threads */
-    CurrentPID = NtGetCurrentProcessId();
+    CurrentPID = NtCurrentProcessId();
     pCurrentSPI = pSPI;
     while (pCurrentSPI->UniqueProcessId != CurrentPID)
     {
@@ -72,7 +72,7 @@ _Try_alloc:
 
     /* Suspend threads */
     SuspendedCount = 0;
-    CurrentTID = NtGetCurrentThreadId();
+    CurrentTID = NtCurrentThreadId();
     for (i = 0; i < pCurrentSPI->NumberOfThreads; i++)
     {
         if (pSTI[i].ClientId.UniqueThread == CurrentTID ||

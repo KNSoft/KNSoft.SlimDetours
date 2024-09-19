@@ -58,7 +58,7 @@ SlimDetoursTransactionBegin(VOID)
     NTSTATUS Status;
 
     // Make sure only one thread can start a transaction.
-    if (_InterlockedCompareExchangePointer(&s_nPendingThreadId, NtGetCurrentThreadId(), 0) != 0)
+    if (_InterlockedCompareExchangePointer(&s_nPendingThreadId, NtCurrentThreadId(), 0) != 0)
     {
         return HRESULT_FROM_NT(STATUS_TRANSACTIONAL_CONFLICT);
     }
@@ -99,7 +99,7 @@ SlimDetoursTransactionAbort(VOID)
     SIZE_T sMem;
     DWORD dwOld;
 
-    if (s_nPendingThreadId != NtGetCurrentThreadId())
+    if (s_nPendingThreadId != NtCurrentThreadId())
     {
         return HRESULT_FROM_NT(STATUS_TRANSACTIONAL_CONFLICT);
     }
@@ -152,7 +152,7 @@ SlimDetoursTransactionCommit(VOID)
     BOOL freed = FALSE;
     ULONG i;
 
-    if (s_nPendingThreadId != NtGetCurrentThreadId())
+    if (s_nPendingThreadId != NtCurrentThreadId())
     {
         return HRESULT_FROM_NT(STATUS_TRANSACTIONAL_CONFLICT);
     }
@@ -281,7 +281,7 @@ SlimDetoursAttach(
     SIZE_T sMem;
     DWORD dwOld;
 
-    if (s_nPendingThreadId != NtGetCurrentThreadId())
+    if (s_nPendingThreadId != NtCurrentThreadId())
     {
         return HRESULT_FROM_NT(STATUS_TRANSACTIONAL_CONFLICT);
     }
@@ -484,7 +484,7 @@ SlimDetoursDetach(
     SIZE_T sMem;
     DWORD dwOld;
 
-    if (s_nPendingThreadId != NtGetCurrentThreadId())
+    if (s_nPendingThreadId != NtCurrentThreadId())
     {
         return HRESULT_FROM_NT(STATUS_TRANSACTIONAL_CONFLICT);
     }
@@ -622,7 +622,7 @@ detour_dll_notify_proc(
     while (pAttach != NULL)
     {
         /* Match Dll name */
-        if (!RtlEqualUnicodeString(&pAttach->usDllName, NotificationData->Loaded.BaseDllName, FALSE))
+        if (!RtlEqualUnicodeString(&pAttach->usDllName, (PUNICODE_STRING)NotificationData->Loaded.BaseDllName, FALSE))
         {
             pPrevAttach = pAttach;
             pAttach = pAttach->pNext;
