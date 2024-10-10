@@ -1,6 +1,6 @@
 ﻿#include "Demo.h"
 
-#include <KNSoft/NDK/UnitTest/UnitTest.inl>
+#include <KNSoft/NDK/Package/UnitTest.inl>
 
 TEST_DECL_FUNC(DeadLock);
 TEST_DECL_FUNC(DelayHook);

@@ -601,6 +601,7 @@ detour_attach_now(
 }
 
 static
+_Function_class_(LDR_DLL_NOTIFICATION_FUNCTION)
 VOID
 CALLBACK
 detour_dll_notify_proc(

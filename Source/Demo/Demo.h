@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <KNSoft/NDK/NDK.h>
-#include <KNSoft/NDK/UnitTest/UnitTest.h>
+#include <KNSoft/NDK/Package/UnitTest.h>
 
 #include "../SlimDetours/SlimDetours.h"
 #include "../Detours/src/detours.h"
