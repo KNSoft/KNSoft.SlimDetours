@@ -154,6 +154,13 @@ detour_thread_update(
                     detour_align_from_trampoline(o->pTrampoline, (BYTE)(cxt.CONTEXT_PC - (ULONG_PTR)o->pTrampoline));
                 bUpdateContext = TRUE;
             }
+#if defined(_AMD64_)
+            else if (cxt.CONTEXT_PC == (ULONG_PTR)o->pTrampoline->rbCodeIn)
+            {
+                cxt.CONTEXT_PC = (ULONG_PTR)o->pbTarget;
+                bUpdateContext = TRUE;
+            }
+#endif
         } else
         {
             if (cxt.CONTEXT_PC >= (ULONG_PTR)o->pbTarget &&
