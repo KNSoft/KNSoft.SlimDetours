@@ -105,7 +105,8 @@ typedef struct _DETOUR_OPERATION DETOUR_OPERATION, *PDETOUR_OPERATION;
 struct _DETOUR_OPERATION
 {
     PDETOUR_OPERATION pNext;
-    BOOL fIsRemove;
+    BOOL fIsAdd : 1;
+    BOOL fIsRemove : 1;
     PBYTE* ppbPointer;
     PBYTE pbTarget;
     PDETOUR_TRAMPOLINE pTrampoline;
@@ -158,9 +159,19 @@ detour_gen_jmp_immediate(
     _In_ PBYTE pbCode,
     _In_ PBYTE pbJmpVal);
 
+BOOL
+detour_is_jmp_immediate_to(
+    _In_ PBYTE pbCode,
+    _In_ PBYTE pbJmpVal);
+
 _Ret_notnull_
 PBYTE
 detour_gen_jmp_indirect(
+    _In_ PBYTE pbCode,
+    _In_ PBYTE* ppbJmpVal);
+
+BOOL
+detour_is_jmp_indirect_to(
     _In_ PBYTE pbCode,
     _In_ PBYTE* ppbJmpVal);
 
@@ -176,6 +187,11 @@ detour_gen_jmp_immediate(
 _Ret_notnull_
 PBYTE
 detour_gen_jmp_indirect(
+    _In_ PBYTE pbCode,
+    _In_ PULONG64 pbJmpVal);
+
+BOOL
+detour_is_jmp_indirect_to(
     _In_ PBYTE pbCode,
     _In_ PULONG64 pbJmpVal);
 

@@ -111,7 +111,7 @@ SlimDetoursTransactionAbort(VOID)
         pMem = o->pbTarget;
         sMem = o->pTrampoline->cbRestore;
         NtProtectVirtualMemory(NtCurrentProcess(), &pMem, &sMem, o->dwPerm, &dwOld);
-        if (!o->fIsRemove)
+        if (o->fIsAdd)
         {
             if (o->pTrampoline)
             {
@@ -168,10 +168,29 @@ SlimDetoursTransactionCommit(VOID)
     {
         if (o->fIsRemove)
         {
-            RtlCopyMemory(o->pbTarget, o->pTrampoline->rbRestore, o->pTrampoline->cbRestore);
-            NtFlushInstructionCache(NtCurrentProcess(), o->pbTarget, o->pTrampoline->cbRestore);
+            // Check if the jmps still points where we expect, otherwise someone might have hooked us.
+            BOOL hookIsStillThere =
+#if defined(_X86_) || defined(_AMD64_)
+                detour_is_jmp_immediate_to(o->pbTarget, o->pTrampoline->rbCodeIn) &&
+                detour_is_jmp_indirect_to(o->pTrampoline->rbCodeIn, &o->pTrampoline->pbDetour);
+#elif defined(_ARM64_)
+                detour_is_jmp_indirect_to(o->pbTarget, (ULONG64*)&(o->pTrampoline->pbDetour));
+#endif
+
+            if (hookIsStillThere)
+            {
+                RtlCopyMemory(o->pbTarget, o->pTrampoline->rbRestore, o->pTrampoline->cbRestore);
+                NtFlushInstructionCache(NtCurrentProcess(), o->pbTarget, o->pTrampoline->cbRestore);
+            } else
+            {
+                // Don't remove in this case, put in bypass mode and leak trampoline.
+                o->fIsRemove = FALSE;
+                o->pTrampoline->pbDetour = o->pTrampoline->rbCode;
+                DETOUR_TRACE("detours: Leaked hook on pbTarget=%p due to external hooking\n", o->pbTarget);
+            }
+
             *o->ppbPointer = o->pbTarget;
-        } else
+        } else if (o->fIsAdd)
         {
             DETOUR_TRACE("detours: pbTramp =%p, pbRemain=%p, pbDetour=%p, cbRestore=%u\n",
                          o->pTrampoline,
@@ -460,6 +479,7 @@ fail:
                  pTrampoline->rbCode[8], pTrampoline->rbCode[9],
                  pTrampoline->rbCode[10], pTrampoline->rbCode[11]);
 
+    o->fIsAdd = TRUE;
     o->fIsRemove = FALSE;
     o->ppbPointer = (PBYTE*)ppPointer;
     o->pTrampoline = pTrampoline;
@@ -523,6 +543,7 @@ fail:
         goto fail;
     }
 
+    o->fIsAdd = FALSE;
     o->fIsRemove = TRUE;
     o->ppbPointer = (PBYTE*)ppPointer;
     o->pTrampoline = pTrampoline;

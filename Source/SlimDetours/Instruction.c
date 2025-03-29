@@ -121,6 +121,20 @@ detour_gen_jmp_immediate(
     return pbCode + sizeof(INT32);
 }
 
+BOOL
+detour_is_jmp_immediate_to(
+    _In_ PBYTE pbCode,
+    _In_ PBYTE pbJmpVal)
+{
+    PBYTE pbJmpSrc = pbCode + 5;
+    if (*pbCode++ != 0xe9)   // jmp +imm32
+    {
+        return FALSE;
+    }
+    INT32 offset = *((INT32*)pbCode);
+    return offset == (INT32)(pbJmpVal - pbJmpSrc);
+}
+
 _Ret_notnull_
 PBYTE
 detour_gen_jmp_indirect(
@@ -138,6 +152,30 @@ detour_gen_jmp_indirect(
     *((INT32*)pbCode) = (INT32)((PBYTE)ppbJmpVal);
 #endif
     return pbCode + sizeof(INT32);
+}
+
+BOOL
+detour_is_jmp_indirect_to(
+    _In_ PBYTE pbCode,
+    _In_ PBYTE* ppbJmpVal)
+{
+#if defined(_AMD64_)
+    PBYTE pbJmpSrc = pbCode + 6;
+#endif
+    if (*pbCode++ != 0xff)   // jmp [+imm32]
+    {
+        return FALSE;
+    }
+    if (*pbCode++ != 0x25)
+    {
+        return FALSE;
+    }
+    INT32 offset = *((INT32*)pbCode);
+#if defined(_AMD64_)
+    return offset == (INT32)((PBYTE)ppbJmpVal - pbJmpSrc);
+#else
+    return offset == (INT32)((PBYTE)ppbJmpVal);
+#endif
 }
 
 _Ret_notnull_
@@ -487,6 +525,37 @@ detour_gen_jmp_indirect(
     pIndJmp->br = 0xD61F0220;
 
     return pbCode;
+}
+
+BOOL
+detour_is_jmp_indirect_to(
+    _In_ PBYTE pbCode,
+    _In_ PULONG64 pbJmpVal)
+{
+    const struct ARM64_INDIRECT_JMP* pIndJmp;
+    union ARM64_INDIRECT_IMM jmpIndAddr;
+
+    jmpIndAddr.value = (((LONG64)pbJmpVal) & 0xFFFFFFFFFFFFF000) -
+        (((LONG64)pbCode) & 0xFFFFFFFFFFFFF000);
+
+    pIndJmp = (const struct ARM64_INDIRECT_JMP*)pbCode;
+
+    return pIndJmp->ardp.Rd == 17 &&
+        pIndJmp->ardp.immhi == (ULONG)jmpIndAddr.adrp_immhi &&
+        pIndJmp->ardp.iop == 0x10 &&
+        pIndJmp->ardp.immlo == (ULONG)jmpIndAddr.adrp_immlo &&
+        pIndJmp->ardp.op == 1 &&
+
+        pIndJmp->ldr.Rt == 17 &&
+        pIndJmp->ldr.Rn == 17 &&
+        pIndJmp->ldr.imm == (((ULONG64)pbJmpVal) & 0xFFF) / 8 &&
+        pIndJmp->ldr.opc == 1 &&
+        pIndJmp->ldr.iop1 == 1 &&
+        pIndJmp->ldr.V == 0 &&
+        pIndJmp->ldr.iop2 == 7 &&
+        pIndJmp->ldr.size == 3 &&
+
+        pIndJmp->br == 0xD61F0220;
 }
 
 _Ret_notnull_
