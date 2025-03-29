@@ -188,12 +188,10 @@ SlimDetoursTransactionCommit(VOID)
                          o->pbTarget[4], o->pbTarget[5], o->pbTarget[6], o->pbTarget[7],
                          o->pbTarget[8], o->pbTarget[9], o->pbTarget[10], o->pbTarget[11]);
 
-#if defined(_AMD64_)
+#if defined(_X86_) || defined(_AMD64_)
             pbCode = detour_gen_jmp_indirect(o->pTrampoline->rbCodeIn, &o->pTrampoline->pbDetour);
             NtFlushInstructionCache(NtCurrentProcess(), o->pTrampoline->rbCodeIn, pbCode - o->pTrampoline->rbCodeIn);
             pbCode = detour_gen_jmp_immediate(o->pbTarget, o->pTrampoline->rbCodeIn);
-#elif defined(_X86_)
-            pbCode = detour_gen_jmp_immediate(o->pbTarget, o->pTrampoline->pbDetour);
 #elif defined(_ARM64_)
             pbCode = detour_gen_jmp_indirect(o->pbTarget, (ULONG64*)&(o->pTrampoline->pbDetour));
 #endif

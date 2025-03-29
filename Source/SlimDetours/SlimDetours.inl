@@ -87,13 +87,13 @@ typedef struct _DETOUR_TRAMPOLINE
     DETOUR_ALIGN    rAlign[8];          // instruction alignment array.
     PBYTE           pbRemain;           // first instruction after moved code. [free list]
     PBYTE           pbDetour;           // first instruction of detour function.
-#if defined(_AMD64_)
+#if defined(_X86_) || defined(_AMD64_)
     BYTE            rbCodeIn[8];        // jmp [pbDetour]
 #endif
 } DETOUR_TRAMPOLINE, *PDETOUR_TRAMPOLINE;
 
 #if defined(_X86_)
-_STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 72);
+_STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 80);
 #elif defined(_AMD64_)
 _STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 96);
 #elif defined(_ARM64_)
