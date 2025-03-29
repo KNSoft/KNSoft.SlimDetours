@@ -113,11 +113,8 @@ SlimDetoursTransactionAbort(VOID)
         NtProtectVirtualMemory(NtCurrentProcess(), &pMem, &sMem, o->dwPerm, &dwOld);
         if (!o->fIsRemove)
         {
-            if (o->pTrampoline)
-            {
-                detour_free_trampoline(o->pTrampoline);
-                o->pTrampoline = NULL;
-            }
+            detour_free_trampoline(o->pTrampoline);
+            o->pTrampoline = NULL;
         }
 
         PDETOUR_OPERATION n = o->pNext;
@@ -240,7 +237,7 @@ SlimDetoursTransactionCommit(VOID)
         pMem = o->pbTarget;
         sMem = o->pTrampoline->cbRestore;
         NtProtectVirtualMemory(NtCurrentProcess(), &pMem, &sMem, o->dwPerm, &dwOld);
-        if (o->fIsRemove && o->pTrampoline)
+        if (o->fIsRemove)
         {
             detour_free_trampoline(o->pTrampoline);
             o->pTrampoline = NULL;
