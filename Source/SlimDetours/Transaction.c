@@ -499,7 +499,7 @@ fail:
         return HRESULT_FROM_NT(Status);
     }
 
-    PDETOUR_TRAMPOLINE pTrampoline = (PDETOUR_TRAMPOLINE)detour_skip_jmp((PBYTE)*ppPointer);
+    PDETOUR_TRAMPOLINE pTrampoline = (PDETOUR_TRAMPOLINE)*ppPointer;
     pDetour = detour_skip_jmp((PBYTE)pDetour);
 
     ////////////////////////////////////// Verify that Trampoline is in place.
