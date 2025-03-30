@@ -135,6 +135,9 @@ detour_memory_free(
     _Frees_ptr_ PVOID BaseAddress);
 
 BOOL
+detour_memory_uninitialize(VOID);
+
+BOOL
 detour_memory_is_system_reserved(
     _In_ PVOID Address);
 

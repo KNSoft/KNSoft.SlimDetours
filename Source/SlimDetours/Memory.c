@@ -142,6 +142,18 @@ detour_memory_free(
 }
 
 BOOL
+detour_memory_uninitialize(VOID)
+{
+    if (_detour_memory_heap != NULL && _detour_memory_heap != NtGetProcessHeap())
+    {
+        _detour_memory_heap = RtlDestroyHeap(_detour_memory_heap);
+        return _detour_memory_heap == NULL;
+    }
+
+    return TRUE;
+}
+
+BOOL
 detour_memory_is_system_reserved(
     _In_ PVOID Address)
 {
