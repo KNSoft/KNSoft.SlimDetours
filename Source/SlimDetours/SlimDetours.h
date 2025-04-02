@@ -64,6 +64,10 @@ SlimDetoursCopyInstruction(
     _Out_opt_ PVOID* ppTarget,
     _Out_opt_ LONG* plExtra);
 
+HRESULT
+NTAPI
+SlimDetoursUninitialize(VOID);
+
 /* Inline Hook, base on Detours */
 
 /// <summary>

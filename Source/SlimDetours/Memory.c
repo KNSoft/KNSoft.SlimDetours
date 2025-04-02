@@ -130,6 +130,16 @@ detour_memory_free(
     return RtlFreeHeap(_detour_memory_heap, 0, BaseAddress);
 }
 
+VOID
+detour_memory_uninitialize(VOID)
+{
+    if (_detour_memory_heap != NULL)
+    {
+        RtlDestroyHeap(_detour_memory_heap);
+        _detour_memory_heap = NULL;
+    }
+}
+
 BOOL
 detour_memory_is_system_reserved(
     _In_ PVOID Address)

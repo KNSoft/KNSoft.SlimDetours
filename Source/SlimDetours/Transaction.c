@@ -552,6 +552,14 @@ fail:
     return HRESULT_FROM_NT(STATUS_SUCCESS);
 }
 
+HRESULT
+NTAPI
+SlimDetoursUninitialize(VOID)
+{
+    detour_memory_uninitialize();
+    return HRESULT_FROM_NT(STATUS_SUCCESS);
+}
+
 #if (NTDDI_VERSION >= NTDDI_WIN6)
 
 static
