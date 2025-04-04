@@ -55,6 +55,18 @@ HRESULT
 NTAPI
 SlimDetoursTransactionBegin(VOID)
 {
+    DETOUR_TRANSACTION_OPTIONS Options;
+    Options.cbSize = sizeof(Options);
+    Options.fSuspendThreads = TRUE;
+
+    return SlimDetoursTransactionBeginEx(&Options);
+}
+
+HRESULT
+NTAPI
+SlimDetoursTransactionBeginEx(
+    _In_ PCDETOUR_TRANSACTION_OPTIONS pOptions)
+{
     NTSTATUS Status;
 
     // Make sure only one thread can start a transaction.
@@ -70,11 +82,18 @@ SlimDetoursTransactionBegin(VOID)
         goto fail;
     }
 
-    Status = detour_thread_suspend(&s_phSuspendedThreads, &s_ulSuspendedThreadCount);
-    if (!NT_SUCCESS(Status))
+    if (pOptions->fSuspendThreads)
     {
-        detour_runnable_trampoline_regions();
-        goto fail;
+        Status = detour_thread_suspend(&s_phSuspendedThreads, &s_ulSuspendedThreadCount);
+        if (!NT_SUCCESS(Status))
+        {
+            detour_runnable_trampoline_regions();
+            goto fail;
+        }
+    } else
+    {
+        s_phSuspendedThreads = NULL;
+        s_ulSuspendedThreadCount = 0;
     }
 
     s_pPendingOperations = NULL;
