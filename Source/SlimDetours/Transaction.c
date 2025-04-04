@@ -53,7 +53,8 @@ static PDETOUR_OPERATION s_pPendingOperations = NULL;
 
 HRESULT
 NTAPI
-SlimDetoursTransactionBegin(VOID)
+SlimDetoursTransactionBeginEx(
+    _In_ PCDETOUR_TRANSACTION_OPTIONS pOptions)
 {
     NTSTATUS Status;
 
@@ -70,11 +71,18 @@ SlimDetoursTransactionBegin(VOID)
         goto fail;
     }
 
-    Status = detour_thread_suspend(&s_phSuspendedThreads, &s_ulSuspendedThreadCount);
-    if (!NT_SUCCESS(Status))
+    if (pOptions->fSuspendThreads)
     {
-        detour_runnable_trampoline_regions();
-        goto fail;
+        Status = detour_thread_suspend(&s_phSuspendedThreads, &s_ulSuspendedThreadCount);
+        if (!NT_SUCCESS(Status))
+        {
+            detour_runnable_trampoline_regions();
+            goto fail;
+        }
+    } else
+    {
+        s_phSuspendedThreads = NULL;
+        s_ulSuspendedThreadCount = 0;
     }
 
     s_pPendingOperations = NULL;

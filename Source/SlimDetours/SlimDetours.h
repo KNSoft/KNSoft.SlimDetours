@@ -27,9 +27,26 @@ extern "C" {
 #define DETOUR_INSTRUCTION_TARGET_NONE ((PVOID)0)
 #define DETOUR_INSTRUCTION_TARGET_DYNAMIC ((PVOID)(LONG_PTR)-1)
 
+typedef struct _DETOUR_TRANSACTION_OPTIONS
+{
+    BOOL fSuspendThreads;
+} DETOUR_TRANSACTION_OPTIONS, *PDETOUR_TRANSACTION_OPTIONS;
+
+typedef const DETOUR_TRANSACTION_OPTIONS* PCDETOUR_TRANSACTION_OPTIONS;
+
 HRESULT
 NTAPI
-SlimDetoursTransactionBegin(VOID);
+SlimDetoursTransactionBeginEx(
+    _In_ PCDETOUR_TRANSACTION_OPTIONS pOptions);
+
+FORCEINLINE
+HRESULT
+SlimDetoursTransactionBegin(VOID)
+{
+    DETOUR_TRANSACTION_OPTIONS Options;
+    Options.fSuspendThreads = TRUE;
+    return SlimDetoursTransactionBeginEx(&Options);
+}
 
 HRESULT
 NTAPI
