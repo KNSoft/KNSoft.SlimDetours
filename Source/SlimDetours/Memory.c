@@ -123,6 +123,17 @@ detour_memory_alloc(
     return RtlAllocateHeap(_detour_memory_heap, 0, Size);
 }
 
+_Must_inspect_result_
+_Ret_maybenull_
+_Post_writable_byte_size_(Size)
+PVOID
+detour_memory_realloc(
+    _Frees_ptr_opt_ PVOID BaseAddress,
+    _In_ SIZE_T Size)
+{
+    return RtlReAllocateHeap(_detour_memory_heap, 0, BaseAddress, Size);
+}
+
 BOOL
 detour_memory_free(
     _Frees_ptr_ PVOID BaseAddress)
