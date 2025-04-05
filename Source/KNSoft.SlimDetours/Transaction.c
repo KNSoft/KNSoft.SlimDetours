@@ -471,6 +471,13 @@ fail:
 
         DETOUR_TRACE(" detour_copy_target_instruction(%p,%p)\n", pbTrampoline, pbSrc);
         pbSrc = (PBYTE)detour_copy_target_instruction(pbTrampoline, pbSrc, NULL, &lExtra, fTargetArm64Ec);
+        if (pbSrc == NULL)
+        {
+            Status = STATUS_ILLEGAL_INSTRUCTION;
+            DETOUR_BREAK();
+            goto fail;
+        }
+
         DETOUR_TRACE(" detour_copy_target_instruction() = %p (%d bytes)\n", pbSrc, (int)(pbSrc - pbOp));
         pbTrampoline += (pbSrc - pbOp) + lExtra;
         cbTarget = PtrOffset(pbTarget, pbSrc);
