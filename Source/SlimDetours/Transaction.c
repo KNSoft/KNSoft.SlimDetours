@@ -98,6 +98,7 @@ SlimDetoursTransactionAbort(VOID)
     PVOID pMem;
     SIZE_T sMem;
     DWORD dwOld;
+    BOOL freed = FALSE;
 
     if (s_nPendingThreadId != NtCurrentThreadId())
     {
@@ -115,6 +116,7 @@ SlimDetoursTransactionAbort(VOID)
         {
             detour_free_trampoline(o->pTrampoline);
             o->pTrampoline = NULL;
+            freed = TRUE;
         }
 
         PDETOUR_OPERATION n = o->pNext;
@@ -122,6 +124,10 @@ SlimDetoursTransactionAbort(VOID)
         o = n;
     }
     s_pPendingOperations = NULL;
+    if (freed)
+    {
+        detour_free_unused_trampoline_regions();
+    }
 
     // Make sure the trampoline pages are no longer writable.
     detour_runnable_trampoline_regions();
@@ -324,6 +330,7 @@ fail:
         if (pTrampoline != NULL)
         {
             detour_free_trampoline(pTrampoline);
+            detour_free_trampoline_region_if_unused(pTrampoline);
             pTrampoline = NULL;
         }
         if (o != NULL)

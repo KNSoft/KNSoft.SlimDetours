@@ -266,6 +266,10 @@ detour_free_trampoline(
 
 VOID detour_free_unused_trampoline_regions(VOID);
 
+VOID
+detour_free_trampoline_region_if_unused(
+    _In_ PDETOUR_TRAMPOLINE pTrampoline);
+
 BYTE
 detour_align_from_trampoline(
     _In_ PDETOUR_TRAMPOLINE pTrampoline,
