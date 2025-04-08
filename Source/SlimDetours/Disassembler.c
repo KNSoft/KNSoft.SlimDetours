@@ -1058,9 +1058,9 @@ Invalid(
     UNREFERENCED_PARAMETER(pDisasm);
     UNREFERENCED_PARAMETER(pEntry);
     UNREFERENCED_PARAMETER(pbDst);
+    UNREFERENCED_PARAMETER(pbSrc);
 
-    ASSERT(!"Invalid Instruction");
-    return pbSrc + 1;
+    return NULL;
 }
 
 static
