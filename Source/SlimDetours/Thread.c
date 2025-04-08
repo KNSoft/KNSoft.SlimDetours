@@ -80,6 +80,10 @@ detour_thread_suspend(
             if (Buffer == s_Handles)
             {
                 p = (PHANDLE)detour_memory_alloc(BufferCapacity * sizeof(HANDLE));
+                if (p)
+                {
+                    RtlCopyMemory(p, Buffer, SuspendedCount * sizeof(HANDLE));
+                }
             } else
             {
                 p = (PHANDLE)detour_memory_realloc(Buffer, BufferCapacity * sizeof(HANDLE));
