@@ -767,15 +767,15 @@ BOOL
 detour_does_code_end_function(
     _In_ PBYTE pbCode)
 {
-    ULONG Opcode = fetch_opcode(pbCode);
-
     // When the OS has patched a function entry point, it will incorrectly
     // appear as though the function is just a single branch instruction.
     if (detour_is_code_os_patched(pbCode))
     {
         return FALSE;
     }
-    if ((Opcode & 0xfffffc1f) == 0xd65f0000 ||  // br <reg>
+
+    ULONG Opcode = fetch_opcode(pbCode);
+    if ((Opcode & 0xffbffc1f) == 0xd61f0000 ||  // ret/br <reg>
         (Opcode & 0xfc000000) == 0x14000000)    // b <imm26>
     {
         return TRUE;
