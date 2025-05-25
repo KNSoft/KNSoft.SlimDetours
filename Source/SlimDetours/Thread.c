@@ -14,6 +14,14 @@ static BOOL g_CurrentThreadSkipped = FALSE;
 static HANDLE g_PrevThreadHandle = NULL;
 
 static
+VOID
+detour_suspend_next_thread_rest(VOID)
+{
+    g_PrevThreadHandle = NULL;
+    g_CurrentThreadSkipped = FALSE;
+}
+
+static
 NTSTATUS
 detour_suspend_next_thread(
     _Out_ PHANDLE NextThreadHandle)
@@ -40,8 +48,8 @@ _Next_thread:
         {
             *NextThreadHandle = NULL;
             Status = STATUS_SUCCESS;
-            goto _Exit;
         }
+        detour_suspend_next_thread_rest();
         return Status;
     }
 
@@ -56,8 +64,7 @@ _Next_thread:
 #pragma warning(default: __WARNING_USING_UNINIT_VAR)
     if (!NT_SUCCESS(Status))
     {
-        NtClose(*NextThreadHandle);
-        goto _Exit;
+        goto _Step_next;
     }
     if (TBI.ClientId.UniqueThread == NtCurrentThreadId())
     {
@@ -75,12 +82,6 @@ _Step_next:
     g_PrevThreadHandle = *NextThreadHandle;
     ClosePrevThread = TRUE;
     goto _Next_thread;
-
-_Exit:
-    g_PrevThreadHandle = NULL;
-    g_CurrentThreadSkipped = FALSE;
-    return Status;
-
 }
 
 #else
@@ -89,6 +90,14 @@ static PSYSTEM_PROCESS_INFORMATION g_SPI = NULL;
 static PSYSTEM_THREAD_INFORMATION g_STI;
 static ULONG g_ThreadCount;
 static OBJECT_ATTRIBUTES g_EmptyObjectAttributes = RTL_CONSTANT_OBJECT_ATTRIBUTES(NULL, 0);
+
+static
+VOID
+detour_suspend_next_thread_rest(VOID)
+{
+    detour_memory_free(g_SPI);
+    g_SPI = NULL;
+}
 
 static
 NTSTATUS
@@ -128,8 +137,7 @@ _Try_alloc:
         {
             if (pSPI->NextEntryOffset == 0)
             {
-                detour_memory_free(g_SPI);
-                g_SPI = NULL;
+                detour_suspend_next_thread_rest();
                 return STATUS_NOT_FOUND;
             }
             pSPI = (PSYSTEM_PROCESS_INFORMATION)Add2Ptr(pSPI, pSPI->NextEntryOffset);
@@ -146,6 +154,7 @@ _Try_alloc:
     }
 
 _Suspend_thread:
+    g_ThreadCount--;
     /* Open and suspend thread, skip current thread */
     if (pSTI->ClientId.UniqueThread != NtCurrentThreadId() &&
         NT_SUCCESS(NtOpenThread(ThreadHandle,
@@ -163,7 +172,6 @@ _Suspend_thread:
         }
     }
 
-    g_ThreadCount--;
     if (g_ThreadCount)
     {
         pSTI += 1;
@@ -171,8 +179,7 @@ _Suspend_thread:
     }
 _No_more_thread:
     *ThreadHandle = NULL;
-    detour_memory_free(g_SPI);
-    g_SPI = NULL;
+    detour_suspend_next_thread_rest();
     return STATUS_SUCCESS;
 }
 
@@ -226,6 +233,7 @@ _Suspend_next_thread:
             Status = STATUS_NO_MEMORY;
             NtResumeThread(ThreadHandle, NULL);
             NtClose(ThreadHandle);
+            detour_suspend_next_thread_rest();
             goto _Fail;
         }
     }
@@ -292,7 +300,7 @@ detour_thread_update(
     /*
      * Work-around an issue in Arm64 (and Arm64EC) in which LR and FP registers may become zeroed
      * when CONTEXT_CONTROL is used without CONTEXT_INTEGER.
-     * 
+     *
      * See also: https://github.com/microsoft/Detours/pull/313
      */
 #if defined(_AMD64_) || defined(_ARM64_)
