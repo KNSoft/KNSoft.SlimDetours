@@ -400,12 +400,21 @@ detour_is_region_empty(
     return TRUE;
 }
 
+static
+VOID
+detour_free_region(
+    _In_ PDETOUR_REGION* ppRegionBase,
+    _In_ PDETOUR_REGION pRegion)
+{
+    *ppRegionBase = pRegion->pNext;
+    PVOID pMem = pRegion;
+    SIZE_T sMem = 0;
+    NtFreeVirtualMemory(NtCurrentProcess(), &pMem, &sMem, MEM_RELEASE);
+}
+
 VOID
 detour_free_unused_trampoline_regions(VOID)
 {
-    PVOID pMem;
-    SIZE_T sMem;
-
     PDETOUR_REGION* ppRegionBase = &s_pRegions;
     PDETOUR_REGION pRegion = s_pRegions;
 
@@ -413,16 +422,38 @@ detour_free_unused_trampoline_regions(VOID)
     {
         if (detour_is_region_empty(pRegion))
         {
-            *ppRegionBase = pRegion->pNext;
-
-            pMem = pRegion;
-            sMem = 0;
-            NtFreeVirtualMemory(NtCurrentProcess(), &pMem, &sMem, MEM_RELEASE);
+            detour_free_region(ppRegionBase, pRegion);
             s_pRegion = NULL;
         } else
         {
             ppRegionBase = &pRegion->pNext;
         }
+        pRegion = *ppRegionBase;
+    }
+}
+
+VOID
+detour_free_trampoline_region_if_unused(
+    _In_ PDETOUR_TRAMPOLINE pTrampoline)
+{
+    PDETOUR_REGION pTargetRegion = (PDETOUR_REGION)((ULONG_PTR)pTrampoline & ~(ULONG_PTR)0xffff);
+
+    PDETOUR_REGION* ppRegionBase = &s_pRegions;
+    PDETOUR_REGION pRegion = s_pRegions;
+
+    while (pRegion != NULL)
+    {
+        if (pRegion == pTargetRegion)
+        {
+            if (detour_is_region_empty(pRegion))
+            {
+                detour_free_region(ppRegionBase, pRegion);
+                s_pRegion = NULL;
+            }
+            break;
+        }
+
+        ppRegionBase = &pRegion->pNext;
         pRegion = *ppRegionBase;
     }
 }
