@@ -102,5 +102,10 @@ C_ASSERT((ULONG_PTR)MI_ASLR_HIGHEST_SYSTEM_RANGE_ADDRESS - (ULONG_PTR)MI_ASLR_LO
 #define _512KB  _KB(512)
 #define _640MB  _MB(640)
 #define _2GB    _GB(2)
+#define _32GB   _GB(32)
+
+#define MM_SHARED_USER_DATA_VA 0x7FFE0000
+
+#define SharedUserData ((KUSER_SHARED_DATA * const)MM_SHARED_USER_DATA_VA)
 
 #endif
