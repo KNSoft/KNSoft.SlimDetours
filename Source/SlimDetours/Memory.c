@@ -97,12 +97,13 @@ detour_memory_is_aslr_enabled(VOID)
             *(PDWORD)stRegValue.BaseType.Data != 0);
 }
 
-static
-_Ret_notnull_
-HANDLE
+VOID
 detour_memory_init(VOID)
 {
-    HANDLE hHeap;
+    if (_detour_memory_heap != NULL)
+    {
+        return;
+    }
 
     /* Initialize memory management information */
     NtQuerySystemInformation(SystemBasicInformation, &g_sbi, sizeof(g_sbi), NULL);
@@ -154,14 +155,12 @@ detour_memory_init(VOID)
     }
 
     /* Initialize private heap */
-    hHeap = RtlCreateHeap(HEAP_NO_SERIALIZE | HEAP_GROWABLE, NULL, 0, 0, NULL, NULL);
-    if (hHeap == NULL)
+    _detour_memory_heap = RtlCreateHeap(HEAP_NO_SERIALIZE | HEAP_GROWABLE, NULL, 0, 0, NULL, NULL);
+    if (_detour_memory_heap == NULL)
     {
         DETOUR_TRACE("RtlCreateHeap failed, fallback to use process default heap\n");
-        hHeap = RtlProcessHeap();
+        _detour_memory_heap = RtlProcessHeap();
     }
-
-    return hHeap;
 }
 
 _Must_inspect_result_
@@ -171,16 +170,6 @@ PVOID
 detour_memory_alloc(
     _In_ SIZE_T Size)
 {
-    /*
-     * detour_memory_alloc is called BEFORE any other detour_memory_* functions,
-     * and only one thread that owning pending transaction could reach here,
-     * so it's safe to do the initialzation here and not use a lock.
-     */
-    if (_detour_memory_heap == NULL)
-    {
-        _detour_memory_heap = detour_memory_init();
-    }
-
     return RtlAllocateHeap(_detour_memory_heap, 0, Size);
 }
 

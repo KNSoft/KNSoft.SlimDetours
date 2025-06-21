@@ -30,6 +30,9 @@ SlimDetoursTransactionBeginEx(
         return HRESULT_FROM_NT(STATUS_TRANSACTIONAL_CONFLICT);
     }
 
+    // Initialize memory management
+    detour_memory_init();
+
     // Make sure the trampoline pages are writable.
     Status = detour_writable_trampoline_regions();
     if (!NT_SUCCESS(Status))
