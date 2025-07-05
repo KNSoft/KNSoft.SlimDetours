@@ -96,17 +96,24 @@ _STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 96);
 _STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 184);
 #endif
 
+enum
+{
+    DETOUR_OPERATION_NONE = 0,
+    DETOUR_OPERATION_ADD,
+    DETOUR_OPERATION_REMOVE,
+};
+
 typedef struct _DETOUR_OPERATION DETOUR_OPERATION, *PDETOUR_OPERATION;
 
 struct _DETOUR_OPERATION
 {
     PDETOUR_OPERATION pNext;
-    BOOL fIsAdd : 1;
-    BOOL fIsRemove : 1;
+    DWORD dwOperation;
     PBYTE* ppbPointer;
     PBYTE pbTarget;
     PDETOUR_TRAMPOLINE pTrampoline;
     ULONG dwPerm;
+    PVOID* ppTrampolineToFreeManually;
 };
 
 /* Memory management */
