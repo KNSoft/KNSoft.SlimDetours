@@ -15,11 +15,11 @@ FN_INSTRUCTION(VOID);
 
 #if defined(_M_X64)
 
-EXTERN_C FN_INSTRUCTION* SimpleInstructionFunc1X64Ptr;
+EXTERN_C FN_INSTRUCTION SimpleInstructionFunc1X64;
 
 #elif defined(_M_IX86)
 
-EXTERN_C FN_INSTRUCTION* SimpleInstructionFunc1X86Ptr;
+EXTERN_C FN_INSTRUCTION SimpleInstructionFunc1X86;
 
 #endif
 
@@ -32,11 +32,11 @@ Hooked_InstructionFunc(VOID)
     return (ULONG_PTR)PRESET_RETURN_VALUE * 2;
 }
 
-static FN_INSTRUCTION** g_apfnInstructionFunctions[] = {
+static FN_INSTRUCTION* g_apfnInstructionFunctions[] = {
 #if defined(_M_X64)
-    &SimpleInstructionFunc1X64Ptr,
+    &SimpleInstructionFunc1X64,
 #elif defined(_M_IX86)
-    &SimpleInstructionFunc1X86Ptr,
+    &SimpleInstructionFunc1X86,
 #endif
     NULL
 };
@@ -48,7 +48,7 @@ TEST_FUNC(Instruction)
 
     for (ULONG i = 0; i < ARRAYSIZE(g_apfnInstructionFunctions) && g_apfnInstructionFunctions[i] != NULL; i++)
     {
-        pfn2 = pfn1 = *g_apfnInstructionFunctions[i];
+        pfn2 = pfn1 = g_apfnInstructionFunctions[i];
         if (pfn1() != (ULONG_PTR)PRESET_RETURN_VALUE)
         {
             TEST_SKIP("Instruction Function #%lu did not return the preset value\n", i);

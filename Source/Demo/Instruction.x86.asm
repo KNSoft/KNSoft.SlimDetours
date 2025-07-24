@@ -1,21 +1,13 @@
-.686P
-.XMM
-.model flat, stdcall
+INCLUDE Instruction.inc
 
-include Instruction.inc
+.CODE
 
-.code
-
-SimpleInstructionFunc1X86 PROC
+SimpleInstructionFunc1X86 PROC C
 
     xor     eax, eax
     mov     eax, PRESET_RETURN_VALUE
     ret
 
 SimpleInstructionFunc1X86 ENDP
-
-.const
-
-$PublicFuncAddr SimpleInstructionFunc1X86
 
 END

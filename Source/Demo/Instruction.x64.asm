@@ -1,6 +1,6 @@
-include Instruction.inc
+INCLUDE Instruction.inc
 
-.code
+.CODE
 
 SimpleInstructionFunc1X64 PROC
 
@@ -9,9 +9,5 @@ SimpleInstructionFunc1X64 PROC
     ret
 
 SimpleInstructionFunc1X64 ENDP
-
-.const
-
-$PublicFuncAddr SimpleInstructionFunc1X64
 
 END

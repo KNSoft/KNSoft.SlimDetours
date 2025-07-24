@@ -1,17 +1,8 @@
-IFDEF _M_IX86
+INCLUDE KNSoft\NDK\Assembly\Header.inc
+INCLUDE KNSoft\NDK\Assembly\NDK.inc
 
-SIZE_T equ <DWORD>
-PRESET_RETURN_VALUE equ 012345678h
-
-ELSE
-
-SIZE_T equ <QWORD>
+IFDEF _WIN64
 PRESET_RETURN_VALUE equ 01234567890ABCDEFh
-
+ELSE
+PRESET_RETURN_VALUE equ 012345678h
 ENDIF
-
-$PublicFuncAddr MACRO Func
-    align 4
-    @CatStr(Func, <Ptr SIZE_T offset >, Func)
-    PUBLIC @CatStr(Func, <Ptr>)
-ENDM
