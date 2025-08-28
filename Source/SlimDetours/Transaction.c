@@ -345,6 +345,13 @@ fail:
 
         DETOUR_TRACE(" SlimDetoursCopyInstruction(%p,%p)\n", pbTrampoline, pbSrc);
         pbSrc = (PBYTE)SlimDetoursCopyInstruction(pbTrampoline, pbSrc, NULL, &lExtra);
+        if (pbSrc == NULL)
+        {
+            Status = STATUS_ILLEGAL_INSTRUCTION;
+            DETOUR_BREAK();
+            goto fail;
+        }
+
         DETOUR_TRACE(" SlimDetoursCopyInstruction() = %p (%d bytes)\n", pbSrc, (int)(pbSrc - pbOp));
         pbTrampoline += (pbSrc - pbOp) + lExtra;
         cbTarget = PtrOffset(pbTarget, pbSrc);
