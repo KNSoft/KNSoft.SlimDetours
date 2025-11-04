@@ -14,7 +14,7 @@
  *
  * The region is [0x50000000 ... 0x78000000) (640MB) on 32-bit Windows;
  * and [0x00007FF7FFFF0000 ... 0x00007FFFFFFF0000) (32GB) on 64-bit Windows, which is too large to avoid.
- * In this case, avoiding 1GB range starting at Ntdll.dll is make sense.
+ * In this case, avoiding 1GB range starting at Ntdll.dll makes sense.
  * If ASLR is disabled on NT6.0 or NT6.1, we reserve the top 1GB or 640MB region.
  *
  * The original Microsoft Detours always assumes and reserves [0x70000000 ... 0x80000000] (256MB) for system DLLs,
@@ -35,6 +35,7 @@ _STATIC_ASSERT(SYSTEM_RESERVED_REGION_HIGHEST + 1 == 0x00007FFFFFFF0000ULL);
 _STATIC_ASSERT(SYSTEM_RESERVED_REGION_SIZE == _32GB);
 _STATIC_ASSERT(SYSTEM_RESERVED_REGION_LOWEST == 0x00007FF7FFFF0000ULL);
 
+static const UNICODE_STRING g_usNtdll = RTL_CONSTANT_STRING(L"ntdll.dll");
 static ULONG_PTR s_ulSystemRegionHighLowerBound = MAXULONG_PTR;
 #else
 _STATIC_ASSERT(SYSTEM_RESERVED_REGION_HIGHEST + 1 == 0x78000000UL);
@@ -64,6 +65,33 @@ static SYSTEM_BASIC_INFORMATION g_sbi = {
 };
 
 static HANDLE _detour_memory_heap = NULL;
+
+#if defined(_WIN64)
+static
+_Success_(return != NULL)
+PVOID
+GetNtdllBase(VOID)
+{
+    /* Get the first loaded entry */
+    PLDR_DATA_TABLE_ENTRY Entry = CONTAINING_RECORD(NtCurrentPeb()->Ldr->InInitializationOrderModuleList.Flink,
+                                                    LDR_DATA_TABLE_ENTRY,
+                                                    InInitializationOrderLinks);
+
+    /* May be replaced by honey pot by very few tamper security softwares */
+    if (RtlEqualUnicodeString(&Entry->BaseDllName, (PUNICODE_STRING)&g_usNtdll, TRUE))
+    {
+        return Entry->DllBase;
+    }
+
+    /* Fallback to LdrGetDllHandleEx */
+    PVOID NtdllBase;
+    return NT_SUCCESS(LdrGetDllHandleEx(LDR_GET_DLL_HANDLE_EX_UNCHANGED_REFCOUNT,
+                                        NULL,
+                                        NULL,
+                                        (PUNICODE_STRING)&g_usNtdll,
+                                        &NtdllBase)) ? NtdllBase : NULL;
+}
+#endif
 
 /*
  * For NT6.0 and NT6.1 only, ASLR can be turned off by MmMoveImages registry option,
@@ -116,17 +144,38 @@ detour_memory_init(VOID)
         {
 #if defined(_WIN64)
             /* 1GB after Ntdll.dll */
-            PLDR_DATA_TABLE_ENTRY NtdllLdrEntry;
+            PVOID NtdllBase = GetNtdllBase();
 
-            NtdllLdrEntry = CONTAINING_RECORD(NtCurrentPeb()->Ldr->InInitializationOrderModuleList.Flink,
-                                              LDR_DATA_TABLE_ENTRY,
-                                              InInitializationOrderLinks);
-            s_ulSystemRegionLowUpperBound = (ULONG_PTR)NtdllLdrEntry->DllBase + NtdllLdrEntry->SizeOfImage - 1;
-            s_ulSystemRegionLowLowerBound = s_ulSystemRegionLowUpperBound - _1GB + 1;
-            if (s_ulSystemRegionLowLowerBound < SYSTEM_RESERVED_REGION_LOWEST)
+            /*
+             * Ntdll.dll is expected to be loaded in the system reserved region.
+             * If that's not the case, e.g. due to future changes in Windows or
+             * EDR tampering, we fall back to the non-ASLR reserved region.
+             */
+            if ((ULONG_PTR)NtdllBase < SYSTEM_RESERVED_REGION_LOWEST ||
+                (ULONG_PTR)NtdllBase >= SYSTEM_RESERVED_REGION_HIGHEST)
             {
-                s_ulSystemRegionHighLowerBound = s_ulSystemRegionLowLowerBound + SYSTEM_RESERVED_REGION_SIZE;
-                s_ulSystemRegionLowLowerBound = SYSTEM_RESERVED_REGION_LOWEST;
+                NtdllBase = NULL;
+            }
+
+            if (NtdllBase)
+            {
+                /*
+                 * Note: The Ntdll.dll region isn't excluded, but it's already
+                 * occupied by ntdll, so that shouldn't be a problem.
+                 */
+                s_ulSystemRegionLowUpperBound = (ULONG_PTR)NtdllBase - 1;
+
+                s_ulSystemRegionLowLowerBound = s_ulSystemRegionLowUpperBound - _1GB + 1;
+                if (s_ulSystemRegionLowLowerBound < SYSTEM_RESERVED_REGION_LOWEST)
+                {
+                    s_ulSystemRegionHighLowerBound = s_ulSystemRegionLowLowerBound + SYSTEM_RESERVED_REGION_SIZE;
+                    s_ulSystemRegionLowLowerBound = SYSTEM_RESERVED_REGION_LOWEST;
+                }
+            } else
+            {
+                /* Reserve a region in the top as a fallback */
+                s_ulSystemRegionLowUpperBound = g_sbi.MaximumUserModeAddress;
+                s_ulSystemRegionLowLowerBound = s_ulSystemRegionLowUpperBound - _1GB + 1;
             }
 #else
             s_ulSystemRegionLowUpperBound = SYSTEM_RESERVED_REGION_HIGHEST;
