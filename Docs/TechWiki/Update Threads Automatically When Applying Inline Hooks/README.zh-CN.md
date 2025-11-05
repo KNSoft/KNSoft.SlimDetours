@@ -63,7 +63,7 @@ while (GetThreadContext(hThread, &ctx))
 4. 更新被成功挂起的线程
 5. 调用`NtResumeThread`恢复挂起的线程
 
-完整实现参考[KNSoft.SlimDetours/Source/SlimDetours/Thread.c于main · KNSoft/KNSoft.SlimDetours](../../../Source/SlimDetours/Thread.c)。
+完整实现参考[KNSoft.SlimDetours/Source/KNSoft.SlimDetours/Thread.c于main · KNSoft/KNSoft.SlimDetours](../../../Source/KNSoft.SlimDetours/Thread.c)。
 
 <br>
 <hr>

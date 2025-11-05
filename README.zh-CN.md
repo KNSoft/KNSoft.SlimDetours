@@ -30,7 +30,7 @@
 
 ### 提要
 
-[KNSoft.SlimDetours NuGet包](https://www.nuget.org/packages/KNSoft.SlimDetours)是开箱即用的，同时含有[SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours)与最新的[Microsoft Detours](https://github.com/microsoft/Detours)，包含对应的头文件（[SlimDetours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/SlimDetours/SlimDetours.h) or [detours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/Microsoft.Detours/src/detours.h)）和编译出的静态库以使用它们。
+[KNSoft.SlimDetours NuGet包](https://www.nuget.org/packages/KNSoft.SlimDetours)是开箱即用的，同时含有[SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours)与最新的[Microsoft Detours](https://github.com/microsoft/Detours)，包含对应的头文件（[SlimDetours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/KNSoft.SlimDetours/SlimDetours.h) or [detours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/Microsoft.Detours/src/detours.h)）和编译出的静态库以使用它们。
 
 ```C
 /* KNSoft.SlimDetours */
@@ -57,7 +57,7 @@ SlimDetoursInlineHook(TRUE, (PVOID*)&g_pfnXxx, Hooked_Xxx);  // 挂钩
 ...
 SlimDetoursInlineHook(FALSE, (PVOID*)&g_pfnXxx, Hooked_Xxx); // 脱钩
 ```
-更多简化的API参考[InlineHook.c](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/SlimDetours/InlineHook.c)。
+更多简化的API参考[InlineHook.c](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/KNSoft.SlimDetours/InlineHook.c)。
 
 ### 详细说明
 
@@ -83,7 +83,7 @@ return SlimDetoursTransactionCommit();
 
 ## 兼容性
 
-项目构建：主要考虑对最新MSVC生成工具和SDK的支持。本项目代码能向下兼容MSVC生成工具与GCC，但具体还要看其依赖的NDK，参考[SlimDetours.NDK.inl](./Source/SlimDetours/SlimDetours.NDK.inl)。支持随[ReactOS](https://github.com/reactos/reactos)一同构建。SlimDetours默认最低目标平台为NT6，编译时指定`_WIN32_WINNT`宏可以构建支持更低NT版本的二进制。
+项目构建：主要考虑对最新MSVC生成工具和SDK的支持。本项目代码能向下兼容MSVC生成工具与GCC，但具体还要看其依赖的NDK，参考[SlimDetours.NDK.inl](./Source/KNSoft.SlimDetours/SlimDetours.NDK.inl)。支持随[ReactOS](https://github.com/reactos/reactos)一同构建。SlimDetours默认最低目标平台为NT6，编译时指定`_WIN32_WINNT`宏可以构建支持更低NT版本的二进制。
 
 制品集成：广泛地兼容MSVC生成工具（已知支持VS2015），以及不同编译配置（如`/MD`、`/MT`）。
 

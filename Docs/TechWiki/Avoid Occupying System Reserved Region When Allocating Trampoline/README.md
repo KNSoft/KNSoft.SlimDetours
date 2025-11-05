@@ -49,7 +49,7 @@ ASLR only reserves a range of 640MB in size for 32-bit systems, which can be dir
 
 `Ntdll.dll` is randomly loaded by ASLR to a memory address lower in the reserved range, and when the subsequent DLL layout bottoms out, it will wrap to the top of the reserved range and continue to be arranged, in which case the "1GB range after `Ntdll.dll`" is 2 discontinuous regions.
 
-[SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours)' implementation details and circumvention range are different from the above PR, more thoughtful consideration has been given to different NT versions, e.g. in NT6.0 and NT6.1 ASLR can be turned off by the `MoveImages` value under `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management` key in the registry. And calls `NtQuerySystemInformation` to obtain a more accurate user address space range than hardcoded to help constrain the location of trampolines, see also [KNSoft.SlimDetours/Source/SlimDetours/Memory.c at main · KNSoft/KNSoft.SlimDetours](../../../Source/SlimDetours/Memory.c).
+[SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours)' implementation details and circumvention range are different from the above PR, more thoughtful consideration has been given to different NT versions, e.g. in NT6.0 and NT6.1 ASLR can be turned off by the `MoveImages` value under `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management` key in the registry. And calls `NtQuerySystemInformation` to obtain a more accurate user address space range than hardcoded to help constrain the location of trampolines, see also [KNSoft.SlimDetours/Source/KNSoft.SlimDetours/Memory.c at main · KNSoft/KNSoft.SlimDetours](../../../Source/KNSoft.SlimDetours/Memory.c).
 
 <br>
 <hr>

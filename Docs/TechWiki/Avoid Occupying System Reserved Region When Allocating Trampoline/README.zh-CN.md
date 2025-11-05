@@ -49,7 +49,7 @@ static PVOID    s_pSystemRegionUpperBound   = (PVOID)(ULONG_PTR)0x80000000;
 
 `Ntdll.dll`被ASLR随机加载到保留范围内较低的内存地址，后续DLL随后排布触底时，将切换到保留范围顶部继续排布，在这个情况下“`Ntdll.dll`之后的1GB范围”便是2块不连续的区域。
 
-[SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours)的具体实现与规避范围均有别于上述PR，为不同NT版本进行了更周到的考虑，比如在NT6.0及NT6.1中ASLR可以被注册表`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management`项`MoveImages`键设置关闭。还调用`NtQuerySystemInformation`以获得比硬编码更确切的用户地址空间范围，协助约束Trampoline的选址，参考[KNSoft.SlimDetours/Source/SlimDetours/Memory.c于main · KNSoft/KNSoft.SlimDetours](../../../Source/SlimDetours/Memory.c)。
+[SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours)的具体实现与规避范围均有别于上述PR，为不同NT版本进行了更周到的考虑，比如在NT6.0及NT6.1中ASLR可以被注册表`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management`项`MoveImages`键设置关闭。还调用`NtQuerySystemInformation`以获得比硬编码更确切的用户地址空间范围，协助约束Trampoline的选址，参考[KNSoft.SlimDetours/Source/KNSoft.SlimDetours/Memory.c于main · KNSoft/KNSoft.SlimDetours](../../../Source/KNSoft.SlimDetours/Memory.c)。
 
 <br>
 <hr>

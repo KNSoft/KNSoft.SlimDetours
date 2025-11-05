@@ -63,7 +63,7 @@ Key points:
 4. Update the threads that were successfully suspended
 5. Call `NtResumeThread` to resume the suspended threads
 
-See [KNSoft.SlimDetours/Source/SlimDetours/Thread.c at main · KNSoft/KNSoft.SlimDetours](../../../Source/SlimDetours/Thread.c) for the full implementation.
+See [KNSoft.SlimDetours/Source/KNSoft.SlimDetours/Thread.c at main · KNSoft/KNSoft.SlimDetours](../../../Source/KNSoft.SlimDetours/Thread.c) for the full implementation.
 
 <br>
 <hr>

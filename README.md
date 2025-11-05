@@ -30,7 +30,7 @@ And here is a [Todo List](https://github.com/KNSoft/KNSoft.SlimDetours/milestone
 
 ### TL;DR
 
-[KNSoft.SlimDetours package](https://www.nuget.org/packages/KNSoft.SlimDetours) is out-of-the-box, contains both of [KNSoft.SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours) and the latest [Microsoft Detours](https://github.com/microsoft/Detours), include corresponding header ([SlimDetours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/SlimDetours/SlimDetours.h) or [detours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/Microsoft.Detours/src/detours.h)) and compiled static library to use them.
+[KNSoft.SlimDetours package](https://www.nuget.org/packages/KNSoft.SlimDetours) is out-of-the-box, contains both of [KNSoft.SlimDetours](https://github.com/KNSoft/KNSoft.SlimDetours) and the latest [Microsoft Detours](https://github.com/microsoft/Detours), include corresponding header ([SlimDetours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/KNSoft.SlimDetours/SlimDetours.h) or [detours.h](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/Microsoft.Detours/src/detours.h)) and compiled static library to use them.
 
 ```C
 /* KNSoft.SlimDetours */
@@ -57,7 +57,7 @@ SlimDetoursInlineHook(TRUE, (PVOID*)&g_pfnXxx, Hooked_Xxx);  // Hook
 ...
 SlimDetoursInlineHook(FALSE, (PVOID*)&g_pfnXxx, Hooked_Xxx); // Unhook
 ```
-For more simplified API see [InlineHook.c](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/SlimDetours/InlineHook.c).
+For more simplified API see [InlineHook.c](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Source/KNSoft.SlimDetours/InlineHook.c).
 
 ### Details
 
@@ -83,7 +83,7 @@ return SlimDetoursTransactionCommit();
 
 ## Compatibility
 
-Project building: support for the latest MSVC generation tools and SDKs is mainly considered. The code in this project is backwards compatible with the MSVC generation tool and GCC, but it depends on the NDK it depends on, see also [SlimDetours.NDK.inl](./Source/SlimDetours/SlimDetours.NDK.inl). Can be built with [ReactOS](https://github.com/reactos/reactos). The minimum target platform is NT6 by default, specifying the `_WIN32_WINNT` macro in compiling-time to build binaries that target to lower NT versions.
+Project building: support for the latest MSVC generation tools and SDKs is mainly considered. The code in this project is backwards compatible with the MSVC generation tool and GCC, but it depends on the NDK it depends on, see also [SlimDetours.NDK.inl](./Source/KNSoft.SlimDetours/SlimDetours.NDK.inl). Can be built with [ReactOS](https://github.com/reactos/reactos). The minimum target platform is NT6 by default, specifying the `_WIN32_WINNT` macro in compiling-time to build binaries that target to lower NT versions.
 
 Artifact integration: widely compatible with MSVC generation tools (support for VS2015 is known), and different compilation configurations (e.g., `/MD`, `/MT`).
 
