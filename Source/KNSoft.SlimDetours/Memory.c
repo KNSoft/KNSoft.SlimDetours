@@ -150,9 +150,11 @@ detour_memory_init(VOID)
              * Ntdll.dll is expected to be loaded in the system reserved region.
              * If that's not the case, e.g. due to future changes in Windows or
              * EDR tampering, we fall back to the non-ASLR reserved region.
+             * 
+             * Currently, SYSTEM_RESERVED_REGION_HIGHEST is 0x00007FFFFFFEFFFFULL on 64-bit Windows,
+             * which is the maximum user mode address, so here we compare with SYSTEM_RESERVED_REGION_LOWEST only.
              */
-            if ((ULONG_PTR)NtdllBase < SYSTEM_RESERVED_REGION_LOWEST ||
-                (ULONG_PTR)NtdllBase >= SYSTEM_RESERVED_REGION_HIGHEST)
+            if ((ULONG_PTR)NtdllBase < SYSTEM_RESERVED_REGION_LOWEST)
             {
                 NtdllBase = NULL;
             }
