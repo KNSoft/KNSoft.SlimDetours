@@ -7,8 +7,8 @@
 #include "Demo.h"
 
 static LONG volatile g_lEqualRect = 0;
-static FN_EqualRect* g_pfnEqualRect1 = NULL;
-static FN_EqualRect* g_pfnEqualRect2 = NULL;
+static typeof(&EqualRect) g_pfnEqualRect1 = NULL;
+static typeof(&EqualRect) g_pfnEqualRect2 = NULL;
 
 static
 BOOL

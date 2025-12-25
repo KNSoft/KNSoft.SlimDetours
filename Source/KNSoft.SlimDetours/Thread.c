@@ -238,8 +238,10 @@ _Suspend_next_thread:
         }
     }
 
-    // Perform a synchronous operation to make sure the thread really is suspended.
-    // https://devblogs.microsoft.com/oldnewthing/20150205-00/?p=44743
+    /*
+     * Perform a synchronous operation to make sure the thread really is suspended.
+     * See also: https://devblogs.microsoft.com/oldnewthing/20150205-00/?p=44743
+     */
     CONTEXT cxt;
     cxt.ContextFlags = CONTEXT_CONTROL;
     NtGetContextThread(ThreadHandle, &cxt);

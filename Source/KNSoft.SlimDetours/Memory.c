@@ -70,9 +70,9 @@ static HANDLE _detour_memory_heap = NULL;
 static
 _Success_(return != NULL)
 PVOID
-GetNtdllBase(VOID)
+detour_memory_get_ntdll(VOID)
 {
-    /* Get the first loaded entry */
+    /* Get the first initialized entry */
     PLDR_DATA_TABLE_ENTRY Entry = CONTAINING_RECORD(NtCurrentPeb()->Ldr->InInitializationOrderModuleList.Flink,
                                                     LDR_DATA_TABLE_ENTRY,
                                                     InInitializationOrderLinks);
@@ -144,7 +144,7 @@ detour_memory_init(VOID)
         {
 #if defined(_WIN64)
             /* 1GB after Ntdll.dll */
-            PVOID NtdllBase = GetNtdllBase();
+            PVOID NtdllBase = detour_memory_get_ntdll();
 
             /*
              * Ntdll.dll is expected to be loaded in the system reserved region.

@@ -51,7 +51,7 @@ TEST_FUNC(Instruction)
         pfn2 = pfn1 = g_apfnInstructionFunctions[i];
         if (pfn1() != (ULONG_PTR)PRESET_RETURN_VALUE)
         {
-            TEST_SKIP("Instruction Function #%lu did not return the preset value\n", i);
+            TEST_SKIP("Instruction Function #%lu did not return the preset value", i);
             continue;
         }
         hr = SlimDetoursInlineHook(TRUE, (PVOID*)&pfn1, Hooked_InstructionFunc);

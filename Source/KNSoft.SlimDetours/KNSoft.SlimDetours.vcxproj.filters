@@ -15,5 +15,6 @@
   <ItemGroup>
     <None Include="SlimDetours.inl" />
     <None Include="SlimDetours.NDK.inl" />
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

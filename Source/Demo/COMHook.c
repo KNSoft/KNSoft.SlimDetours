@@ -7,6 +7,7 @@
  * This demo may crash on ARM64 host, see opening issues:
  *   https://github.com/microsoft/Detours/issues/292
  *   https://github.com/microsoft/Detours/issues/355
+ * it may be related to ARM64 emulators, there’s nothing we can do.
  */
 
 #include "Demo.h"
@@ -15,17 +16,8 @@
 
 #pragma comment(lib, "shlwapi.lib")
 
-typedef
-HRESULT
-STDMETHODCALLTYPE
-FN_IStream_Read(
-    IStream* This,
-    _Out_writes_bytes_to_(cb, *pcbRead) void* pv,
-    _In_ ULONG cb,
-    _Out_opt_ ULONG* pcbRead);
-
 static IStream* g_pStream = NULL;
-static FN_IStream_Read* g_pfnIStream_Read = NULL;
+static FIELD_TYPE(IStream, lpVtbl->Read) g_pfnIStream_Read = NULL;
 static LONG volatile g_lCount = 0;
 static ULONG g_ulValue = 123, g_ulRead = 0;
 
@@ -50,12 +42,13 @@ Hooked_IStream_Read(
 
 TEST_FUNC(COMHook)
 {
-    /* FIXME: Skip in incompatible cases, see issues mentioned in the head */
-    if (SharedUserData->NativeProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM64)
+    /* FIXME: Skip incompatible cases, see issues mentioned in the head */
+    if (GET_NT_VERSION() >= NT_VERSION_WIN10 &&
+        SharedUserData->NativeProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM64 &&
+        NtReadTeb(WowTebOffset) != 0)
     {
-#if defined(_M_IX86) || defined(_M_X64)
-        TEST_SKIP("FIXME: COM Hook has issues in non-native environments on ARM64\n");
-#endif
+        TEST_SKIP("FIXME: COM Hook has issues in non-native environments on ARM64");
+        return;
     }
 
     HRESULT hr;
@@ -64,13 +57,13 @@ TEST_FUNC(COMHook)
     hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(hr))
     {
-        TEST_SKIP("CoInitializeEx failed with 0x%18lX\n", hr);
+        TEST_SKIP("CoInitializeEx failed with 0x%18lX", hr);
         return;
     }
     g_pStream = SHCreateMemStream((const BYTE*)&g_ulValue, sizeof(g_ulValue));
     if (g_pStream == NULL)
     {
-        TEST_SKIP("SHCreateMemStream failed\n");
+        TEST_SKIP("SHCreateMemStream failed");
         goto _Exit_0;
     }
 
@@ -79,14 +72,14 @@ TEST_FUNC(COMHook)
     hr = SlimDetoursInlineHook(TRUE, (PVOID*)&g_pfnIStream_Read, &Hooked_IStream_Read);
     if (FAILED(hr))
     {
-        TEST_FAIL("SlimDetoursInlineHook failed with 0x%18lX\n", hr);
+        TEST_FAIL("SlimDetoursInlineHook failed with 0x%18lX", hr);
         goto _Exit_1;
     }
     g_ulValue = 0xDEADBEEF;
     hr = g_pStream->lpVtbl->Read(g_pStream, &g_ulValue, sizeof(g_ulValue), &g_ulRead);
     if (FAILED(hr))
     {
-        TEST_FAIL("IStream::Read failed with 0x%18lX\n", hr);
+        TEST_FAIL("IStream::Read failed with 0x%18lX", hr);
         goto _Exit_1;
     }
 
@@ -99,13 +92,13 @@ TEST_FUNC(COMHook)
     hr = SlimDetoursInlineHook(FALSE, (PVOID*)&g_pfnIStream_Read, &Hooked_IStream_Read);
     if (FAILED(hr))
     {
-        TEST_FAIL("SlimDetoursInlineHook failed with 0x%18lX\n", hr);
+        TEST_FAIL("SlimDetoursInlineHook failed with 0x%18lX", hr);
         goto _Exit_1;
     }
     hr = g_pStream->lpVtbl->Read(g_pStream, &g_ulValue, sizeof(g_ulValue), &g_ulRead);
     if (FAILED(hr))
     {
-        TEST_FAIL("IStream::Read failed with 0x%18lX\n", hr);
+        TEST_FAIL("IStream::Read failed with 0x%18lX", hr);
     }
     TEST_OK(g_lCount == 1);
 

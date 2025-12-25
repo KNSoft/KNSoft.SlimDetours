@@ -9,13 +9,6 @@
 
 EXTERN_C_START
 
-typedef
-BOOL
-WINAPI
-FN_EqualRect(
-    _In_ CONST RECT *lprc1,
-    _In_ CONST RECT *lprc2);
-
 typedef enum _DEMO_ENGINE_TYPE
 {
     EngineInvalid,
@@ -23,7 +16,7 @@ typedef enum _DEMO_ENGINE_TYPE
     EngineMicrosoftDetours
 } DEMO_ENGINE_TYPE, *PDEMO_ENGINE_TYPE;
 
-EXTERN_C FN_EqualRect* g_pfnEqualRect;
+EXTERN_C typeof(&EqualRect) g_pfnEqualRect;
 EXTERN_C UNICODE_STRING g_usUser32;
 EXTERN_C ANSI_STRING g_asEqualRect;
 EXTERN_C LONG volatile g_lEqualRectCount;

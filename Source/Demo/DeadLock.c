@@ -91,13 +91,13 @@ TEST_FUNC(DeadLock)
 
     if (FAILED(GetEngineTypeFromArgs(TEST_PARAMETER_ARGC, TEST_PARAMETER_ARGV, &g_eEngineType)))
     {
-        TEST_SKIP("Invalid engine type\n");
+        TEST_SKIP("Invalid engine type");
         return;
     }
     Status = LoadEqualRect();
     if (!NT_SUCCESS(Status))
     {
-        TEST_SKIP("Load user32.dll!EqualRect failed with 0x%08lX\n", Status);
+        TEST_SKIP("Load user32.dll!EqualRect failed with 0x%08lX", Status);
         return;
     }
 
@@ -105,13 +105,13 @@ TEST_FUNC(DeadLock)
     hThreads[0] = CreateThread(NULL, 0, HeapUserThread, NULL, CREATE_SUSPENDED, NULL);
     if (hThreads[0] == NULL)
     {
-        TEST_SKIP("CreateThread failed with 0x%08lX\n", GetLastError());
+        TEST_SKIP("CreateThread failed with 0x%08lX", GetLastError());
         return;
     }
     hThreads[1] = CreateThread(NULL, 0, SetHookThread, (PVOID)hThreads[0], CREATE_SUSPENDED, NULL);
     if (hThreads[1] == NULL)
     {
-        TEST_SKIP("CreateThread failed with 0x%08lX\n", GetLastError());
+        TEST_SKIP("CreateThread failed with 0x%08lX", GetLastError());
         g_bStop = TRUE;
         ResumeThread(hThreads[0]);
         WaitForSingleObject(hThreads[0], INFINITE);
@@ -145,5 +145,5 @@ TEST_FUNC(DeadLock)
     {
         dwRet = GetLastError();
     }
-    TEST_SKIP("WaitForMultipleObjects failed with 0x%08lX\n", dwRet);
+    TEST_SKIP("WaitForMultipleObjects failed with 0x%08lX", dwRet);
 }

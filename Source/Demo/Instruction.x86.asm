@@ -1,3 +1,5 @@
+.MODEL FLAT, C
+
 INCLUDE Instruction.inc
 
 .CODE

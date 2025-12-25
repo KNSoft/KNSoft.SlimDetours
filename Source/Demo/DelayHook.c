@@ -14,7 +14,7 @@
 #pragma comment(lib, "KNSoft.NDK.WinAPI.lib") // For Ldr(Register/Unregister)DllNotification imports
 
 static HRESULT g_hrDelayAttach = E_FAIL;
-static FN_EqualRect* g_pfnOrgEqualRect = NULL;
+static typeof(&EqualRect) g_pfnOrgEqualRect = NULL;
 
 static
 _Function_class_(LDR_DLL_NOTIFICATION_FUNCTION)
@@ -56,11 +56,11 @@ TEST_FUNC(DelayHook)
     Status = LdrGetDllHandle(NULL, NULL, &g_usUser32, &hUser32);
     if (NT_SUCCESS(Status))
     {
-        TEST_SKIP("user32.dll is loaded, test cannot continue\n");
+        TEST_SKIP("user32.dll is loaded, test cannot continue");
         return;
     } else if (Status != STATUS_DLL_NOT_FOUND)
     {
-        TEST_SKIP("LdrGetDllHandle failed with 0x%08lX\n", Status);
+        TEST_SKIP("LdrGetDllHandle failed with 0x%08lX", Status);
         return;
     }
 
@@ -68,7 +68,7 @@ TEST_FUNC(DelayHook)
     Status = LdrRegisterDllNotification(0, DllLoadCallback, NULL, &Cookie);
     if (!NT_SUCCESS(Status))
     {
-        TEST_SKIP("LdrRegisterDllNotification failed with 0x%08lX\n", Status);
+        TEST_SKIP("LdrRegisterDllNotification failed with 0x%08lX", Status);
         return;
     }
 
@@ -76,7 +76,7 @@ TEST_FUNC(DelayHook)
     Status = LdrLoadDll(NULL, NULL, &g_usUser32, &hUser32);
     if (!NT_SUCCESS(Status))
     {
-        TEST_SKIP("LdrLoadDll failed with 0x%08lX\n", Status);
+        TEST_SKIP("LdrLoadDll failed with 0x%08lX", Status);
         goto _Exit;
     }
 

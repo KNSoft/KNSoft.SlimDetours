@@ -23,7 +23,7 @@ CONST UNITTEST_ENTRY UnitTestList[] = {
 
 #define DEMO_SWITCH_ENGINE L"-Engine="
 
-FN_EqualRect* g_pfnEqualRect = NULL;
+typeof(&EqualRect) g_pfnEqualRect = NULL;
 UNICODE_STRING g_usUser32 = RTL_CONSTANT_STRING(L"user32.dll");
 ANSI_STRING g_asEqualRect = RTL_CONSTANT_STRING("EqualRect");
 LONG volatile g_lEqualRectCount = 0;

@@ -76,7 +76,6 @@ C_ASSERT((ULONG_PTR)MI_ASLR_HIGHEST_SYSTEM_RANGE_ADDRESS - (ULONG_PTR)MI_ASLR_LO
 
 #define NtCurrentProcessId() ((HANDLE)NtCurrentTeb()->ClientId.UniqueProcess)
 #define NtCurrentThreadId() ((HANDLE)NtCurrentTeb()->ClientId.UniqueThread)
-#define NtGetNtdllBase() (CONTAINING_RECORD(NtCurrentPeb()->Ldr->InInitializationOrderModuleList.Flink, LDR_DATA_TABLE_ENTRY, InInitializationOrderLinks)->DllBase)
 
 #define RtlProcessHeap() (NtCurrentPeb()->ProcessHeap)
 
