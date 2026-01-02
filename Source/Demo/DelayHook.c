@@ -1,5 +1,5 @@
 ﻿/*
- * This demo shows delay hook, user32.dll!EqualRect will be hooked automatically when user32.dll loaded.
+ * This demo shows delay hook, msidle.dll!GetIdleMinutes(#8) will be hooked automatically when msidle.dll loaded.
  * Implemented by DLL Notification mechanism, introduced in NT6.
  *
  * Run "Demo.exe -Run DelayHook".
@@ -14,7 +14,22 @@
 #pragma comment(lib, "KNSoft.NDK.WinAPI.lib") // For Ldr(Register/Unregister)DllNotification imports
 
 static HRESULT g_hrDelayAttach = E_FAIL;
-static typeof(&EqualRect) g_pfnOrgEqualRect = NULL;
+static typeof(&GetIdleMinutes) g_pfnOrgGetIdleMinutes, g_pfnGetIdleMinutes = NULL;
+static CONST UNICODE_STRING g_usMsidle = RTL_CONSTANT_STRING(L"msidle.dll");
+static LONG volatile g_lGetIdleMinutesCount = 0;
+static DWORD g_dwGetIdleMinutesRet = 0;
+
+static
+DWORD
+WINAPI
+Hooked_GetIdleMinutes(
+    DWORD dwReserved)
+{
+    _InterlockedIncrement(&g_lGetIdleMinutesCount);
+    g_dwGetIdleMinutesRet = g_pfnGetIdleMinutes(dwReserved);
+    UnitTest_FormatMessage("GetIdleMinutes returns %lu\n", g_dwGetIdleMinutesRet);
+    return g_dwGetIdleMinutesRet;
+}
 
 static
 _Function_class_(LDR_DLL_NOTIFICATION_FUNCTION)
@@ -28,16 +43,18 @@ DllLoadCallback(
     NTSTATUS Status;
 
     if (NotificationReason == LDR_DLL_NOTIFICATION_REASON_LOADED &&
-        RtlCompareUnicodeString((PUNICODE_STRING)NotificationData->Loaded.BaseDllName, &g_usUser32, TRUE) != 0)
+        RtlCompareUnicodeString((PUNICODE_STRING)NotificationData->Loaded.BaseDllName,
+                                (PUNICODE_STRING)&g_usMsidle,
+                                TRUE) != 0)
     {
         return;
     }
 
-    Status = LdrGetProcedureAddress(NotificationData->Loaded.DllBase, &g_asEqualRect, 0, (PVOID*)&g_pfnEqualRect);
+    Status = LdrGetProcedureAddress(NotificationData->Loaded.DllBase, NULL, 8, (PVOID*)&g_pfnGetIdleMinutes);
     if (NT_SUCCESS(Status))
     {
-        g_pfnOrgEqualRect = g_pfnEqualRect;
-        g_hrDelayAttach = SlimDetoursInlineHook(TRUE, (PVOID)&g_pfnEqualRect, Hooked_EqualRect);
+        g_pfnOrgGetIdleMinutes = g_pfnGetIdleMinutes;
+        g_hrDelayAttach = SlimDetoursInlineHook(TRUE, (PVOID)&g_pfnGetIdleMinutes, Hooked_GetIdleMinutes);
     } else
     {
         UnitTest_FormatMessage("LdrGetProcedureAddress failed with 0x%08lX in DllLoadCallback\n", Status);
@@ -49,14 +66,14 @@ TEST_FUNC(DelayHook)
 {
     NTSTATUS Status;
     PVOID Cookie;
-    PVOID hUser32;
-    RECT rc1 = { 0 }, rc2 = { 0 };
+    PVOID hMsidle;
+    DWORD dwRet;
 
-    /* Make sure user32.dll is not loaded yet */
-    Status = LdrGetDllHandle(NULL, NULL, &g_usUser32, &hUser32);
+    /* Make sure msidle.dll is not loaded yet */
+    Status = LdrGetDllHandle(NULL, NULL, (PUNICODE_STRING)&g_usMsidle, &hMsidle);
     if (NT_SUCCESS(Status))
     {
-        TEST_SKIP("user32.dll is loaded, test cannot continue");
+        TEST_SKIP("msidle.dll is loaded, test cannot continue");
         return;
     } else if (Status != STATUS_DLL_NOT_FOUND)
     {
@@ -72,20 +89,21 @@ TEST_FUNC(DelayHook)
         return;
     }
 
-    /* Load user32.dll now */
-    Status = LdrLoadDll(NULL, NULL, &g_usUser32, &hUser32);
+    /* Load msidle.dll now */
+    Status = LdrLoadDll(NULL, NULL, (PUNICODE_STRING)&g_usMsidle, &hMsidle);
     if (!NT_SUCCESS(Status))
     {
         TEST_SKIP("LdrLoadDll failed with 0x%08lX", Status);
         goto _Exit;
     }
 
-    /* Delay attach callback should be called and EqualRect is hooked successfully */
+    /* Delay attach callback should be called and GetIdleMinutes is hooked successfully */
     TEST_OK(SUCCEEDED(g_hrDelayAttach));
-    TEST_OK(g_pfnOrgEqualRect(&rc1, &rc2) == TRUE);
-    TEST_OK(g_lEqualRectCount == 1);
+    dwRet = g_pfnOrgGetIdleMinutes(0);
+    TEST_OK(dwRet == g_dwGetIdleMinutesRet);
+    TEST_OK(g_lGetIdleMinutesCount == 1);
 
-    LdrUnloadDll(hUser32);
+    LdrUnloadDll(hMsidle);
 _Exit:
     LdrUnregisterDllNotification(Cookie);
 }
