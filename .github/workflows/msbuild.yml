@@ -41,11 +41,8 @@ jobs:
       if: ${{(matrix.os == 'windows-latest' && (matrix.platform == 'x64' || matrix.platform == 'x86') || matrix.os == 'windows-11-arm')}}
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run COMHook
+        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run DeadLock -Engine=SlimDetours
-        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run DelayHook
-        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run Instruction
-        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run TwiceSimpleHook
     - name: Build [NT5] (x64, x86)
       if: ${{ matrix.platform == 'x64' || matrix.platform == 'x86' }}
       working-directory: ${{env.GITHUB_WORKSPACE}}
@@ -56,7 +53,5 @@ jobs:
       if: ${{ matrix.platform == 'x64' || matrix.platform == 'x86' }}
       working-directory: ${{env.GITHUB_WORKSPACE}}
       run: |
-        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run COMHook
+        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run DeadLock -Engine=SlimDetours
-        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run Instruction
-        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run TwiceSimpleHook
