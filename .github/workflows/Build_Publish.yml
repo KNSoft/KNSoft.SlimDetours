@@ -68,12 +68,20 @@ jobs:
         msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Release /p:Platform=x86 /p:RestorePackagesConfig=true
         msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Release /p:Platform=ARM64 /p:RestorePackagesConfig=true
         msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Release /p:Platform=ARM64EC /p:RestorePackagesConfig=true
+        msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Debug /p:Platform=x64 /p:RestorePackagesConfig=true
+        msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Debug /p:Platform=x86 /p:RestorePackagesConfig=true
+        msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Debug /p:Platform=ARM64 /p:RestorePackagesConfig=true
+        msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Debug /p:Platform=ARM64EC /p:RestorePackagesConfig=true
     - name: Run Unit Test
       run: |
         .\Source\OutDir\x64\Release\Demo.exe -Run
         .\Source\OutDir\x64\Release\Demo.exe -Run DeadLock -Engine=SlimDetours
         .\Source\OutDir\x86\Release\Demo.exe -Run
         .\Source\OutDir\x86\Release\Demo.exe -Run DeadLock -Engine=SlimDetours
+        .\Source\OutDir\x64\Debug\Demo.exe -Run
+        .\Source\OutDir\x64\Debug\Demo.exe -Run DeadLock -Engine=SlimDetours
+        .\Source\OutDir\x86\Debug\Demo.exe -Run
+        .\Source\OutDir\x86\Debug\Demo.exe -Run DeadLock -Engine=SlimDetours
     - name: Create NuGet package
       run: |
         cd .\Source
@@ -83,7 +91,7 @@ jobs:
       with:
         name: v${{steps.relver.outputs.relver}}
         tag_name: v${{steps.relver.outputs.relver}}
-        body: "(TO BE FILLED BY MAINTAINER)\n**NuGet Package**: https://www.nuget.org/packages/KNSoft.NDK/${{steps.relver.outputs.relver}}"
+        body: "(TO BE FILLED BY MAINTAINER)\n**NuGet Package**: https://www.nuget.org/packages/KNSoft.SlimDetours/${{steps.relver.outputs.relver}}"
         prerelease: true
         preserve_order: true
         fail_on_unmatched_files: true
