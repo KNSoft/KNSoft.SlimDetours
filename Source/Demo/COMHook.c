@@ -7,7 +7,7 @@
  * This demo may crash on ARM64 host, see opening issues:
  *   https://github.com/microsoft/Detours/issues/292
  *   https://github.com/microsoft/Detours/issues/355
- * it may be related to ARM64 emulators, there’s nothing we can do.
+ * it may be related to ARM64 emulators, there's nothing we can do.
  */
 
 #include "Demo.h"
