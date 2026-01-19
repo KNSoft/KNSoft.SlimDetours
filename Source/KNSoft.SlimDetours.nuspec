@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd">
   <metadata>
     <id>KNSoft.SlimDetours</id>
-    <version>1.2.0-beta</version>
+    <version>1.2.1-beta</version>
     <title>KNSoft.SlimDetours</title>
     <authors>KNSoft</authors>
     <projectUrl>https://github.com/KNSoft/KNSoft.SlimDetours</projectUrl>
