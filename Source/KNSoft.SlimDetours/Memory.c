@@ -98,7 +98,6 @@ detour_memory_get_ntdll(VOID)
  * this function returns FALSE if the option was set to 0 explicitly.
  */
 static
-FORCEINLINE
 BOOL
 detour_memory_is_aslr_enabled(VOID)
 {
@@ -274,7 +273,7 @@ detour_memory_2gb_below(
 {
     return (ULONG_PTR)Address > g_sbi.MinimumUserModeAddress + _2GB ?
         (PBYTE)Address - (_2GB - _512KB) :
-        (PVOID)(g_sbi.MinimumUserModeAddress + _512KB);
+        (PVOID)(ULONG_PTR)(g_sbi.MinimumUserModeAddress + _512KB);
 }
 
 _Ret_notnull_
@@ -288,5 +287,5 @@ detour_memory_2gb_above(
 #endif
         (ULONG_PTR)Address <= g_sbi.MaximumUserModeAddress - _2GB) ?
         (PBYTE)Address + (_2GB - _512KB) :
-        (PVOID)(g_sbi.MaximumUserModeAddress - _512KB);
+        (PVOID)(ULONG_PTR)(g_sbi.MaximumUserModeAddress - _512KB);
 }
