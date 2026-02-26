@@ -16,8 +16,8 @@
 - `.github/workflows/Build_Publish.yml`
 
 ## Hard Rules
-- Follow `.editorconfig`.
-- Preserve original file encoding and line-ending style when editing files.
+- CRITICAL: Follow `.editorconfig`, including SAL annotations conventions.
+- CRITICAL: Preserve original file encoding and line-ending style when editing files.
 - Keep diffs minimal; do not refactor unrelated code.
 - `Source/Microsoft.Detours/` is bundled for NuGet packaging only; never modify it.
 - Use concise, technical comments only when needed.

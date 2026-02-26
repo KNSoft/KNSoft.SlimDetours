@@ -42,7 +42,7 @@ DllLoadCallback(
 {
     NTSTATUS Status;
 
-    if (NotificationReason == LDR_DLL_NOTIFICATION_REASON_LOADED &&
+    if (NotificationReason != LDR_DLL_NOTIFICATION_REASON_LOADED ||
         RtlCompareUnicodeString((PUNICODE_STRING)NotificationData->Loaded.BaseDllName,
                                 (PUNICODE_STRING)&g_usMsidle,
                                 TRUE) != 0)
@@ -54,7 +54,7 @@ DllLoadCallback(
     if (NT_SUCCESS(Status))
     {
         g_pfnOrgGetIdleMinutes = g_pfnGetIdleMinutes;
-        g_hrDelayAttach = SlimDetoursInlineHook(TRUE, (PVOID)&g_pfnGetIdleMinutes, Hooked_GetIdleMinutes);
+        g_hrDelayAttach = SlimDetoursInlineHook(TRUE, (PVOID*)&g_pfnGetIdleMinutes, Hooked_GetIdleMinutes);
     } else
     {
         UnitTest_FormatMessage("LdrGetProcedureAddress failed with 0x%08lX in DllLoadCallback\n", Status);
