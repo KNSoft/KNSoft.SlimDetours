@@ -317,7 +317,7 @@ detour_thread_update(
     bUpdateContext = FALSE;
     for (PDETOUR_OPERATION o = PendingOperations; o != NULL && !bUpdateContext; o = o->pNext)
     {
-        if (o->fIsRemove)
+        if (o->dwOperation == DETOUR_OPERATION_REMOVE)
         {
             if (cxt.CONTEXT_PC >= (ULONG_PTR)o->pTrampoline->rbCode &&
                 cxt.CONTEXT_PC < ((ULONG_PTR)o->pTrampoline->rbCode + RTL_FIELD_SIZE(DETOUR_TRAMPOLINE, rbCode)))
@@ -333,7 +333,7 @@ detour_thread_update(
                 bUpdateContext = TRUE;
             }
 #endif
-        } else if (o->fIsAdd)
+        } else if (o->dwOperation == DETOUR_OPERATION_ADD)
         {
             if (cxt.CONTEXT_PC >= (ULONG_PTR)o->pbTarget &&
                 cxt.CONTEXT_PC < ((ULONG_PTR)o->pbTarget + o->pTrampoline->cbRestore))
