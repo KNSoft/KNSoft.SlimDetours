@@ -2786,6 +2786,7 @@ detour_copy_instruction(
 
 #endif
 
+_Success_(return != NULL)
 PVOID
 NTAPI
 SlimDetoursCopyInstruction(
