@@ -2685,6 +2685,7 @@ CopyInstruction(
 
 #endif // defined(_ARM64_)
 
+_Success_(return != NULL)
 PVOID
 NTAPI
 SlimDetoursCopyInstruction(

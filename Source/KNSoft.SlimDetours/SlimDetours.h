@@ -73,6 +73,7 @@ NTAPI
 SlimDetoursCodeFromPointer(
     _In_ PVOID pPointer);
 
+_Success_(return != NULL)
 PVOID
 NTAPI
 SlimDetoursCopyInstruction(
