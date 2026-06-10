@@ -1066,9 +1066,9 @@ Invalid(
     UNREFERENCED_PARAMETER(pDisasm);
     UNREFERENCED_PARAMETER(pEntry);
     UNREFERENCED_PARAMETER(pbDst);
+    UNREFERENCED_PARAMETER(pbSrc);
 
-    ASSERT(!"Invalid Instruction");
-    return pbSrc + 1;
+    return NULL;
 }
 
 static
@@ -1527,10 +1527,14 @@ CopyFF(
     // invalid/7
     UNREFERENCED_PARAMETER(pEntry);
 
+    BYTE const b1 = pbSrc[1];
+    if ((b1 & 0x38) == 0x38)
+    {
+        return Invalid(pDisasm, &g_rceCopyMap[eENTRY_Invalid], pbDst, pbSrc);
+    }
+
     REFCOPYENTRY ce = /* ff */ &g_rceCopyMap[eENTRY_CopyBytes2Mod];
     PBYTE pbOut = ce->pfCopy(pDisasm, ce, pbDst, pbSrc);
-
-    BYTE const b1 = pbSrc[1];
 
     if (0x15 == b1 || 0x25 == b1)
     {
@@ -2777,6 +2781,7 @@ CopyInstruction(
 
 #endif // defined(_ARM64_)
 
+_Success_(return != NULL)
 PVOID
 NTAPI
 SlimDetoursCopyInstruction(
