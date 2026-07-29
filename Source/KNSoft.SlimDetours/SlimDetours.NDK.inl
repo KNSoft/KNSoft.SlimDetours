@@ -43,11 +43,11 @@
 #define PAGE_SIZE 0x1000
 #define MM_ALLOCATION_GRANULARITY 0x10000
 
-#if defined(_X86_)
+#if defined(_M_IX86)
 #define CONTEXT_PC Eip
-#elif defined(_AMD64_)
+#elif defined(_M_X64)
 #define CONTEXT_PC Rip
-#elif defined(_ARM64_)
+#elif defined(_M_ARM64)
 #define CONTEXT_PC Pc
 #endif
 

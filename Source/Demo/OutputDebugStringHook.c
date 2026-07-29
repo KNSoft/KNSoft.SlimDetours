@@ -9,7 +9,7 @@
 
 #include "Demo.h"
 
-#if defined(_AMD64_) || defined(_ARM64_)
+#if defined(_M_X64) || defined(_M_ARM64)
 
 typedef
 VOID
@@ -33,7 +33,7 @@ Hooked_OutputDebugStringA(
     g_pfnOutputDebugStringA(lpOutputString);
 }
 
-#if defined(_AMD64_)
+#if defined(_M_X64)
 
 static
 _Success_(return != FALSE)
@@ -51,7 +51,7 @@ DecodeKernel32OutputDebugStringAStub(
     return TRUE;
 }
 
-#elif defined(_ARM64_)
+#elif defined(_M_ARM64)
 
 static
 ULONG

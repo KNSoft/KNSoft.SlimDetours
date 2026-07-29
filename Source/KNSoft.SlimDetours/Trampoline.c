@@ -19,6 +19,7 @@ struct _DETOUR_REGION
     ULONGLONG ullSignature;
     PDETOUR_REGION pNext;       // Next region in list of regions.
     PDETOUR_TRAMPOLINE pFree;   // List of free trampolines in this region.
+    BOOL fEcCode;
 };
 
 #define DETOUR_REGION_SIGNATURE ((ULONGLONG)'lSNK' << 32 | 'srtD')
@@ -101,7 +102,8 @@ static
 PVOID
 detour_alloc_region_from_lo(
     PBYTE pbLo,
-    PBYTE pbHi)
+    PBYTE pbHi,
+    BOOL fEcCode)
 {
     NTSTATUS Status;
     PVOID pMem;
@@ -141,12 +143,7 @@ detour_alloc_region_from_lo(
         {
             pMem = pbTry;
             sMem = DETOUR_REGION_SIZE;
-            Status = NtAllocateVirtualMemory(NtCurrentProcess(),
-                                             &pMem,
-                                             0,
-                                             &sMem,
-                                             MEM_COMMIT | MEM_RESERVE,
-                                             PAGE_EXECUTE_READWRITE);
+            Status = detour_alloc_region(&pMem, &sMem, fEcCode);
             if (NT_SUCCESS(Status))
             {
                 return pMem;
@@ -169,7 +166,8 @@ static
 PVOID
 detour_alloc_region_from_hi(
     PBYTE pbLo,
-    PBYTE pbHi)
+    PBYTE pbHi,
+    BOOL fEcCode)
 {
     NTSTATUS Status;
     PVOID pMem;
@@ -210,12 +208,7 @@ detour_alloc_region_from_hi(
         {
             pMem = pbTry;
             sMem = DETOUR_REGION_SIZE;
-            Status = NtAllocateVirtualMemory(NtCurrentProcess(),
-                                             &pMem,
-                                             0,
-                                             &sMem,
-                                             MEM_COMMIT | MEM_RESERVE,
-                                             PAGE_EXECUTE_READWRITE);
+            Status = detour_alloc_region(&pMem, &sMem, fEcCode);
             if (NT_SUCCESS(Status))
             {
                 return pMem;
@@ -237,7 +230,8 @@ PVOID
 detour_alloc_trampoline_allocate_new(
     PBYTE pbTarget,
     PDETOUR_TRAMPOLINE pLo,
-    PDETOUR_TRAMPOLINE pHi)
+    PDETOUR_TRAMPOLINE pHi,
+    BOOL fEcCode)
 {
     PVOID pbTry = NULL;
 
@@ -248,34 +242,34 @@ detour_alloc_trampoline_allocate_new(
     // Try looking 1GB below or lower.
     if (pbTry == NULL && pbTarget > (PBYTE)0x40000000)
     {
-        pbTry = detour_alloc_region_from_hi((PBYTE)pLo, pbTarget - 0x40000000);
+        pbTry = detour_alloc_region_from_hi((PBYTE)pLo, pbTarget - 0x40000000, fEcCode);
     }
     // Try looking 1GB above or higher.
     if (pbTry == NULL && pbTarget < (PBYTE)0xffffffff40000000)
     {
-        pbTry = detour_alloc_region_from_lo(pbTarget + 0x40000000, (PBYTE)pHi);
+        pbTry = detour_alloc_region_from_lo(pbTarget + 0x40000000, (PBYTE)pHi, fEcCode);
     }
     // Try looking 1GB below or higher.
     if (pbTry == NULL && pbTarget > (PBYTE)0x40000000)
     {
-        pbTry = detour_alloc_region_from_lo(pbTarget - 0x40000000, pbTarget);
+        pbTry = detour_alloc_region_from_lo(pbTarget - 0x40000000, pbTarget, fEcCode);
     }
     // Try looking 1GB above or lower.
     if (pbTry == NULL && pbTarget < (PBYTE)0xffffffff40000000)
     {
-        pbTry = detour_alloc_region_from_hi(pbTarget, pbTarget + 0x40000000);
+        pbTry = detour_alloc_region_from_hi(pbTarget, pbTarget + 0x40000000, fEcCode);
     }
 #endif
 
     // Try anything below.
     if (pbTry == NULL)
     {
-        pbTry = detour_alloc_region_from_hi((PBYTE)pLo, pbTarget);
+        pbTry = detour_alloc_region_from_hi((PBYTE)pLo, pbTarget, fEcCode);
     }
     // Try anything above.
     if (pbTry == NULL)
     {
-        pbTry = detour_alloc_region_from_lo(pbTarget, (PBYTE)pHi);
+        pbTry = detour_alloc_region_from_lo(pbTarget, (PBYTE)pHi, fEcCode);
     }
 
     return pbTry;
@@ -284,25 +278,38 @@ detour_alloc_trampoline_allocate_new(
 _Ret_maybenull_
 PDETOUR_TRAMPOLINE
 detour_alloc_trampoline(
-    _In_ PBYTE pbTarget)
+    _In_ PBYTE pbTarget,
+    _In_ BOOL fEcCode)
 {
     // We have to place trampolines within +/- 2GB of target.
 
     PDETOUR_TRAMPOLINE pLo;
     PDETOUR_TRAMPOLINE pHi;
 
+#if defined(_M_ARM64EC)
+    if (fEcCode)
+    {
+        detour_find_jmp_bounds_arm64(pbTarget, (PVOID*)&pLo, (PVOID*)&pHi);
+    } else
+    {
+        detour_find_jmp_bounds(pbTarget, (PVOID*)&pLo, (PVOID*)&pHi);
+    }
+#elif defined(_M_ARM64)
+    detour_find_jmp_bounds_arm64(pbTarget, (PVOID*)&pLo, (PVOID*)&pHi);
+#else
     detour_find_jmp_bounds(pbTarget, (PVOID*)&pLo, (PVOID*)&pHi);
+#endif
 
     PDETOUR_TRAMPOLINE pTrampoline = NULL;
 
     // Insure that there is a default region.
-    if (s_pRegion == NULL && s_pRegions != NULL)
+    if ((s_pRegion == NULL || s_pRegion->fEcCode != fEcCode) && s_pRegions != NULL)
     {
-        s_pRegion = s_pRegions;
+        s_pRegion = NULL;
     }
 
-    // First check the default region for an valid free block.
-    if (s_pRegion != NULL && s_pRegion->pFree != NULL &&
+    // First check the default region for a valid free block.
+    if (s_pRegion != NULL && s_pRegion->fEcCode == fEcCode && s_pRegion->pFree != NULL &&
         s_pRegion->pFree >= pLo && s_pRegion->pFree <= pHi)
     {
 
@@ -321,7 +328,8 @@ found_region:
     // Then check the existing regions for a valid free block.
     for (s_pRegion = s_pRegions; s_pRegion != NULL; s_pRegion = s_pRegion->pNext)
     {
-        if (s_pRegion != NULL && s_pRegion->pFree != NULL && s_pRegion->pFree >= pLo && s_pRegion->pFree <= pHi)
+        if (s_pRegion->fEcCode == fEcCode && s_pRegion->pFree != NULL &&
+            s_pRegion->pFree >= pLo && s_pRegion->pFree <= pHi)
         {
             goto found_region;
         }
@@ -333,12 +341,13 @@ found_region:
     // /RTCc RuntimeChecks breaks PtrToUlong.
     pbTarget = pbTarget - (ULONG)((ULONG_PTR)pbTarget & 0xffff);
 
-    PVOID pbNewlyAllocated = detour_alloc_trampoline_allocate_new(pbTarget, pLo, pHi);
+    PVOID pbNewlyAllocated = detour_alloc_trampoline_allocate_new(pbTarget, pLo, pHi, fEcCode);
     if (pbNewlyAllocated != NULL)
     {
         s_pRegion = (DETOUR_REGION*)pbNewlyAllocated;
         s_pRegion->ullSignature = DETOUR_REGION_SIGNATURE;
         s_pRegion->pFree = NULL;
+        s_pRegion->fEcCode = fEcCode;
         s_pRegion->pNext = s_pRegions;
         s_pRegions = s_pRegion;
         DETOUR_TRACE("  Allocated region %p..%p\n\n", s_pRegion, Add2Ptr(s_pRegion, DETOUR_REGION_SIZE - 1));
