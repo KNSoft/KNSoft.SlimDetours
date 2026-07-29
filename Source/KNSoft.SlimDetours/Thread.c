@@ -302,7 +302,7 @@ detour_thread_update(
      *
      * See also: https://github.com/microsoft/Detours/pull/313
      */
-#if defined(_AMD64_) || defined(_ARM64_)
+#if defined(_M_X64) || defined(_M_ARM64)
     cxt.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
 #else
     cxt.ContextFlags = CONTEXT_CONTROL;
@@ -326,7 +326,13 @@ detour_thread_update(
                     detour_align_from_trampoline(o->pTrampoline, (BYTE)(cxt.CONTEXT_PC - (ULONG_PTR)o->pTrampoline));
                 bUpdateContext = TRUE;
             }
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(_M_ARM64EC)
+            else if (!o->fTargetArm64Ec && cxt.CONTEXT_PC == (ULONG_PTR)o->pTrampoline->rbCodeIn)
+            {
+                cxt.CONTEXT_PC = (ULONG_PTR)o->pbTarget;
+                bUpdateContext = TRUE;
+            }
+#elif defined(_M_IX86) || defined(_M_X64)
             else if (cxt.CONTEXT_PC == (ULONG_PTR)o->pTrampoline->rbCodeIn)
             {
                 cxt.CONTEXT_PC = (ULONG_PTR)o->pbTarget;

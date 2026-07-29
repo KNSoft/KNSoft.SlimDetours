@@ -3,11 +3,11 @@
 #include <KNSoft/NDK/Package/UnitTest.inl>
 
 /* Manual demos */
+TEST_DECL_FUNC(COMHook);
 TEST_DECL_FUNC(DeadLock);
 TEST_DECL_FUNC(OutputDebugStringHook);
 
 /* Auto tests */
-TEST_DECL_FUNC(COMHook);
 TEST_DECL_FUNC(TwiceSimpleHook);
 TEST_DECL_FUNC(Instruction);
 #if _WIN32_WINNT >= _WIN32_WINNT_WIN6
@@ -15,12 +15,12 @@ TEST_DECL_FUNC(DelayHook);
 #endif
 
 CONST UNITTEST_ENTRY UnitTestList[] = {
+    TEST_DECL_MANUAL_ENTRY(COMHook),
     TEST_DECL_MANUAL_ENTRY(DeadLock),
-#if defined(_AMD64_) || defined(_ARM64_)
+#if defined(_M_X64) || defined(_M_ARM64)
     TEST_DECL_MANUAL_ENTRY(OutputDebugStringHook),
 #endif
 
-    TEST_DECL_ENTRY(COMHook),
     TEST_DECL_ENTRY(TwiceSimpleHook),
     TEST_DECL_ENTRY(Instruction),
 #if _WIN32_WINNT >= _WIN32_WINNT_WIN6
@@ -41,6 +41,12 @@ int _cdecl wmain(
     _In_ int argc,
     _In_reads_(argc) _Pre_z_ wchar_t** argv)
 {
+    ULONG ErrorMode = SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX;
+
+    NtSetInformationProcess(NtCurrentProcess(),
+                            ProcessDefaultHardErrorMode,
+                            &ErrorMode,
+                            sizeof(ErrorMode));
     return UnitTest_Main(argc, argv);
 }
 

@@ -1,13 +1,13 @@
 ﻿/*
- * This demo performs a COM hook (IStream::Read), get procedure address from virtual table and set inline hook.
- * Similar to "commem" sample in the original detours.
+ * This demo performs a COM hook (IStream::Read) and compares Microsoft Detours with KNSoft.SlimDetours
+ * compatibility on ARM64.
  *
- * Run "Demo.exe -Run COMHook".
+ * On ARM64EC, run "Demo.exe -Run COMHook -Engine=MSDetours" may crash when hooking ARM64EC code.
+ * Run "Demo.exe -Run COMHook -Engine=SlimDetours" will pass the same test.
  * 
- * This demo may crash on ARM64 host, see opening issues:
+ * See also:
  *   https://github.com/microsoft/Detours/issues/292
  *   https://github.com/microsoft/Detours/issues/355
- * it may be related to ARM64 emulators, there's nothing we can do.
  */
 
 #include "Demo.h"
@@ -40,18 +40,40 @@ Hooked_IStream_Read(
     return g_pfnIStream_Read(This, pv, cb, pcbRead);
 }
 
+static
+HRESULT
+SetIStreamReadHook(
+    _In_ DEMO_ENGINE_TYPE EngineType,
+    _In_ BOOL Enable)
+{
+    HRESULT hr;
+
+    hr = HookTransactionBegin(EngineType);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+    hr = HookAttach(EngineType, Enable, (PVOID*)&g_pfnIStream_Read, Hooked_IStream_Read);
+    if (SUCCEEDED(hr))
+    {
+        hr = HookTransactionCommit(EngineType);
+    } else
+    {
+        HookTransactionAbort(EngineType);
+    }
+    return hr;
+}
+
 TEST_FUNC(COMHook)
 {
-    /* FIXME: Skip incompatible cases, see issues mentioned in the head */
-    if (GET_NT_VERSION() >= NT_VERSION_WIN10 &&
-        SharedUserData->NativeProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM64 &&
-        NtReadTeb(WowTebOffset) != 0)
+    HRESULT hr;
+    DEMO_ENGINE_TYPE EngineType;
+
+    if (FAILED(GetEngineTypeFromArgs(TEST_PARAMETER_ARGC, TEST_PARAMETER_ARGV, &EngineType)))
     {
-        TEST_SKIP("FIXME: COM Hook has issues in non-native environments on ARM64");
+        TEST_SKIP("Invalid engine type");
         return;
     }
-
-    HRESULT hr;
 
     /* Initialize IStream */
     hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
@@ -69,12 +91,22 @@ TEST_FUNC(COMHook)
 
     /* Hook IStream::Read and call it */
     g_pfnIStream_Read = g_pStream->lpVtbl->Read;
-    hr = SlimDetoursInlineHook(TRUE, (PVOID*)&g_pfnIStream_Read, &Hooked_IStream_Read);
-    if (FAILED(hr))
+#if defined(_M_ARM64EC)
+    if (!RtlIsEcCode((ULONG64)g_pfnIStream_Read))
     {
-        TEST_FAIL("SlimDetoursInlineHook failed with 0x%18lX", hr);
+        TEST_SKIP("IStream::Read is not ARM64EC code");
         goto _Exit_1;
     }
+#endif
+    hr = SetIStreamReadHook(EngineType, TRUE);
+    if (FAILED(hr))
+    {
+        TEST_FAIL("Hook IStream::Read failed with 0x%18lX", hr);
+        goto _Exit_1;
+    }
+#if defined(_M_ARM64EC)
+    TEST_OK(RtlIsEcCode((ULONG64)g_pfnIStream_Read));
+#endif
     g_ulValue = 0xDEADBEEF;
     hr = g_pStream->lpVtbl->Read(g_pStream, &g_ulValue, sizeof(g_ulValue), &g_ulRead);
     if (FAILED(hr))
@@ -89,10 +121,10 @@ TEST_FUNC(COMHook)
     TEST_OK(g_lCount == 1);
 
     /* Unhook IStream::Read and call it */
-    hr = SlimDetoursInlineHook(FALSE, (PVOID*)&g_pfnIStream_Read, &Hooked_IStream_Read);
+    hr = SetIStreamReadHook(EngineType, FALSE);
     if (FAILED(hr))
     {
-        TEST_FAIL("SlimDetoursInlineHook failed with 0x%18lX", hr);
+        TEST_FAIL("Unhook IStream::Read failed with 0x%18lX", hr);
         goto _Exit_1;
     }
     hr = g_pStream->lpVtbl->Read(g_pStream, &g_ulValue, sizeof(g_ulValue), &g_ulRead);

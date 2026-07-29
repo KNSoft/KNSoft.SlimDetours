@@ -32,6 +32,7 @@ jobs:
       if: ${{(matrix.os == 'windows-latest' && (matrix.platform == 'x64' || matrix.platform == 'x86') || matrix.os == 'windows-11-arm')}}
       run: |
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run
+        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run COMHook -Engine=SlimDetours
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run DeadLock -Engine=SlimDetours
     - name: Run OutputDebugStringHook Test [x64/ARM64]
       if: ${{(matrix.os == 'windows-latest' && matrix.platform == 'x64') || (matrix.os == 'windows-11-arm' && matrix.platform == 'ARM64')}}
@@ -46,6 +47,7 @@ jobs:
       if: ${{ matrix.platform == 'x64' || matrix.platform == 'x86' }}
       run: |
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run
+        .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run COMHook -Engine=SlimDetours
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run DeadLock -Engine=SlimDetours
     - name: Run OutputDebugStringHook Test [NT5, x64]
       if: ${{ matrix.os == 'windows-latest' && matrix.platform == 'x64' }}
@@ -83,14 +85,18 @@ jobs:
     - name: Run Unit Test
       run: |
         .\Source\OutDir\x64\Release\Demo.exe -Run
+        .\Source\OutDir\x64\Release\Demo.exe -Run COMHook -Engine=SlimDetours
         .\Source\OutDir\x64\Release\Demo.exe -Run DeadLock -Engine=SlimDetours
         .\Source\OutDir\x64\Release\Demo.exe -Run OutputDebugStringHook -Engine=SlimDetours
         .\Source\OutDir\x86\Release\Demo.exe -Run
+        .\Source\OutDir\x86\Release\Demo.exe -Run COMHook -Engine=SlimDetours
         .\Source\OutDir\x86\Release\Demo.exe -Run DeadLock -Engine=SlimDetours
         .\Source\OutDir\x64\Debug\Demo.exe -Run
+        .\Source\OutDir\x64\Debug\Demo.exe -Run COMHook -Engine=SlimDetours
         .\Source\OutDir\x64\Debug\Demo.exe -Run DeadLock -Engine=SlimDetours
         .\Source\OutDir\x64\Debug\Demo.exe -Run OutputDebugStringHook -Engine=SlimDetours
         .\Source\OutDir\x86\Debug\Demo.exe -Run
+        .\Source\OutDir\x86\Debug\Demo.exe -Run COMHook -Engine=SlimDetours
         .\Source\OutDir\x86\Debug\Demo.exe -Run DeadLock -Engine=SlimDetours
     - name: Create NuGet package
       run: |

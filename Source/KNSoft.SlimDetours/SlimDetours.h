@@ -14,8 +14,8 @@
 
 #include <Windows.h>
 
-#if !defined(_X86_) && !defined(_AMD64_) && !defined(_ARM64_)
-#error Unsupported architecture (x86, amd64, arm64)
+#if !defined(_M_IX86) && !defined(_M_X64) && !defined(_M_ARM64) && !defined(_M_ARM64EC)
+#error Unsupported architecture (x86, x64, arm64, arm64ec)
 #endif
 
 #ifdef __cplusplus
@@ -81,6 +81,7 @@ SlimDetoursCopyInstruction(
     _Out_opt_ PVOID* ppTarget,
     _Out_opt_ LONG* plExtra);
 
+// The caller must ensure no other thread is using SlimDetours during uninitialization.
 HRESULT
 NTAPI
 SlimDetoursUninitialize(VOID);
