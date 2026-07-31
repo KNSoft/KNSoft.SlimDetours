@@ -44,8 +44,8 @@ typedef struct _DETOUR_TRAMPOLINE
     // 
     // An ARM64 instruction is 4 bytes long.
     //
-    // The overwrite is always composed of 3 instructions (12 bytes) which perform an indirect jump
-    // using _DETOUR_TRAMPOLINE::pbDetour as the address holding the target location.
+    // For an ARM64 target, the overwrite is composed of 3 instructions (12 bytes) which perform an
+    // indirect jump using _DETOUR_TRAMPOLINE::pbDetour as the address holding the target location.
     //
     // Copied instructions can expand.
     //
@@ -60,30 +60,25 @@ typedef struct _DETOUR_TRAMPOLINE
     //   3 instructions to form immediate
     //   br or brl
     //
-    // A theoretical maximum for rbCode is therefore 4*4*6 + 16 = 112 (another 16 for jmp to pbRemain).
+    // The theoretical maximum for ARM64 code in rbCode is therefore 4*4*6 + 16 = 112
+    // (another 16 for jmp to pbRemain).
     //
     // With literals, the maximum expansion is 5, including the literals: 4*4*5 + 16 = 96.
     //
-    // The number is rounded up to 128. m_rbScratchDst should match this.
+    // The ARM64 buffer size is rounded up to 128. DETOUR_DISASM_ARM64::rbScratchDst matches this.
     //
-#if defined(_M_ARM64EC)
+#if defined(_M_ARM64) || defined(_M_ARM64EC)
     BYTE            rbCode[128];        // target code + jmp to pbRemain.
 #elif defined(_M_IX86) || defined(_M_X64)
     BYTE            rbCode[30];         // target code + jmp to pbRemain.
-#elif defined(_M_ARM64)
-    BYTE            rbCode[128];        // target code + jmp to pbRemain.
 #endif
     BYTE            cbCode;             // size of moved target code.
-#if defined(_M_ARM64EC)
+#if defined(_M_ARM64) || defined(_M_ARM64EC)
     BYTE            cbCodeBreak[3];     // padding to make debugging easier.
 #elif defined(_M_IX86) || defined(_M_X64)
     BYTE            cbCodeBreak;        // padding to make debugging easier.
-#elif defined(_M_ARM64)
-    BYTE            cbCodeBreak[3];     // padding to make debugging easier.
 #endif
-#if defined(_M_ARM64EC)
-    BYTE            rbRestore[30];      // original target code.
-#elif defined(_M_IX86)
+#if defined(_M_IX86)
     BYTE            rbRestore[22];      // original target code.
 #elif defined(_M_X64)
     BYTE            rbRestore[30];      // original target code.
@@ -171,7 +166,7 @@ PVOID
 detour_memory_2gb_above(
     _In_ PVOID Address);
 
-#if defined(_M_ARM64EC)
+#if defined(_M_X64) || defined(_M_ARM64EC)
 
 BOOL
 detour_is_ec_code(

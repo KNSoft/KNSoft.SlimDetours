@@ -68,10 +68,14 @@ static SYSTEM_BASIC_INFORMATION g_sbi = {
  * ARM64EC Support
  */
 
-#if defined(_M_ARM64EC)
+#if defined(_M_X64) || defined(_M_ARM64EC)
 
 static CONST ANSI_STRING g_asRtlIsEcCode = RTL_CONSTANT_STRING("RtlIsEcCode");
 static typeof(&RtlIsEcCode) g_pfnRtlIsEcCode = NULL;
+
+#endif
+
+#if defined(_M_ARM64EC)
 
 static CONST ANSI_STRING g_asNtAllocateVirtualMemoryEx = RTL_CONSTANT_STRING("NtAllocateVirtualMemoryEx");
 static typeof(&NtAllocateVirtualMemoryEx) g_pfnNtAllocateVirtualMemoryEx = NULL;
@@ -233,11 +237,13 @@ detour_memory_init(VOID)
 #endif
                 + 1;
         }
-#if defined(_M_ARM64EC)
+#if defined(_M_X64) || defined(_M_ARM64EC)
         LdrGetProcedureAddress(NtdllBase,
                                (PANSI_STRING)&g_asRtlIsEcCode,
                                0,
                                (PVOID*)&g_pfnRtlIsEcCode);
+#endif
+#if defined(_M_ARM64EC)
         LdrGetProcedureAddress(NtdllBase,
                                (PANSI_STRING)&g_asNtAllocateVirtualMemoryEx,
                                0,
@@ -357,7 +363,7 @@ detour_memory_2gb_above(
         (PVOID)(ULONG_PTR)(g_sbi.MaximumUserModeAddress - _512KB);
 }
 
-#if defined(_M_ARM64EC)
+#if defined(_M_X64) || defined(_M_ARM64EC)
 
 BOOL
 detour_is_ec_code(

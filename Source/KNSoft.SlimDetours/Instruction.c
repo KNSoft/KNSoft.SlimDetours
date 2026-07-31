@@ -852,9 +852,7 @@ detour_skip_jmp_arm64ec(
     _In_ PBYTE pbCode,
     _Out_opt_ PBOOL pfArm64Ec)
 {
-    pbCode = detour_is_ec_code(pbCode) ?
-        detour_skip_jmp_arm64(pbCode) :
-        detour_skip_jmp(pbCode);
+    pbCode = detour_is_ec_code(pbCode) ? detour_skip_jmp_arm64(pbCode) : detour_skip_jmp(pbCode);
     if (pfArm64Ec != NULL)
     {
         *pfArm64Ec = detour_is_ec_code(pbCode);

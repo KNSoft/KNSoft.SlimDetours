@@ -46,9 +46,7 @@ detour_does_target_code_end_function(
     _In_ BOOL fTargetArm64Ec)
 {
 #if defined(_M_ARM64EC)
-    return fTargetArm64Ec ?
-        detour_does_code_end_function_arm64(pbCode) :
-        detour_does_code_end_function(pbCode);
+    return fTargetArm64Ec ? detour_does_code_end_function_arm64(pbCode) : detour_does_code_end_function(pbCode);
 #elif defined(_M_ARM64)
     UNREFERENCED_PARAMETER(fTargetArm64Ec);
     return detour_does_code_end_function_arm64(pbCode);
@@ -65,9 +63,7 @@ detour_is_target_code_filler(
     _In_ BOOL fTargetArm64Ec)
 {
 #if defined(_M_ARM64EC)
-    return fTargetArm64Ec ?
-        detour_is_code_filler_arm64(pbCode) :
-        detour_is_code_filler(pbCode);
+    return fTargetArm64Ec ? detour_is_code_filler_arm64(pbCode) : detour_is_code_filler(pbCode);
 #elif defined(_M_ARM64)
     UNREFERENCED_PARAMETER(fTargetArm64Ec);
     return detour_is_code_filler_arm64(pbCode);
@@ -216,9 +212,7 @@ SlimDetoursTransactionCommit(VOID)
 #if defined(_M_ARM64EC)
             if (o->fTargetArm64Ec)
             {
-                hookIsStillThere = detour_is_jmp_indirect_to_arm64(
-                    o->pbTarget,
-                    (ULONG64*)&(o->pTrampoline->pbDetour));
+                hookIsStillThere = detour_is_jmp_indirect_to_arm64(o->pbTarget, (ULONG64*)&(o->pTrampoline->pbDetour));
             } else
             {
                 hookIsStillThere =
@@ -394,6 +388,20 @@ SlimDetoursAttach(
         DETOUR_BREAK();
         goto fail;
     }
+#elif defined(_M_X64)
+    if (detour_is_ec_code(pbTarget))
+    {
+        Status = STATUS_NOT_SUPPORTED;
+        goto fail;
+    }
+    pbTarget = detour_skip_jmp(pbTarget);
+    if (detour_is_ec_code(pbTarget))
+    {
+        Status = STATUS_NOT_SUPPORTED;
+        goto fail;
+    }
+    fTargetArm64Ec = FALSE;
+    pDetour = detour_skip_jmp((PBYTE)pDetour);
 #elif defined(_M_ARM64)
     fTargetArm64Ec = FALSE;
     pbTarget = detour_skip_jmp_arm64(pbTarget);
@@ -462,12 +470,7 @@ fail:
         LONG lExtra = 0;
 
         DETOUR_TRACE(" detour_copy_target_instruction(%p,%p)\n", pbTrampoline, pbSrc);
-        pbSrc = (PBYTE)detour_copy_target_instruction(
-            pbTrampoline,
-            pbSrc,
-            NULL,
-            &lExtra,
-            fTargetArm64Ec);
+        pbSrc = (PBYTE)detour_copy_target_instruction(pbTrampoline, pbSrc, NULL, &lExtra, fTargetArm64Ec);
         DETOUR_TRACE(" detour_copy_target_instruction() = %p (%d bytes)\n", pbSrc, (int)(pbSrc - pbOp));
         pbTrampoline += (pbSrc - pbOp) + lExtra;
         cbTarget = PtrOffset(pbTarget, pbSrc);

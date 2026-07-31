@@ -98,7 +98,7 @@ typedef struct _DETOUR_DISASM
 
     LONG    lScratchExtra;
     PBYTE   pbScratchTarget;
-    BYTE    rbScratchDst[64]; // matches or exceeds rbCode
+    BYTE    rbScratchDst[64]; // scratch space for copied x86/x64 instructions
 } DETOUR_DISASM, *PDETOUR_DISASM;
 
 static
@@ -1840,7 +1840,7 @@ CopyRex2(
 typedef struct _DETOUR_DISASM_ARM64
 {
     PBYTE   pbTarget;
-    BYTE    rbScratchDst[128]; // matches or exceeds rbCode
+    BYTE    rbScratchDst[128]; // matches ARM64 rbCode
 } DETOUR_DISASM_ARM64, *PDETOUR_DISASM_ARM64;
 
 static

@@ -99,6 +99,13 @@ TEST_FUNC(COMHook)
     }
 #endif
     hr = SetIStreamReadHook(EngineType, TRUE);
+#if defined(_M_X64) && !defined(_M_ARM64EC)
+    if (EngineType == EngineSlimDetours && FAILED(hr))
+    {
+        TEST_OK(hr == HRESULT_FROM_NT(STATUS_NOT_SUPPORTED));
+        goto _Exit_1;
+    }
+#endif
     if (FAILED(hr))
     {
         TEST_FAIL("Hook IStream::Read failed with 0x%18lX", hr);
