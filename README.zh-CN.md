@@ -14,6 +14,7 @@
 - 经改进
   - **挂钩时自动更新线程** [🔗 技术Wiki：应用内联钩子时自动更新线程](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Update%20Threads%20Automatically%20When%20Applying%20Inline%20Hooks/README.zh-CN.md)
   - **更新线程时避免堆死锁** [🔗 技术Wiki：更新线程时避免堆死锁](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Avoid%20Heap%20Deadlocks%20When%20Updating%20Threads/README.zh-CN.md)
+  - **ARM64EC兼容性** [🔗 技术Wiki：实现ARM64EC兼容性](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Implement%20ARM64EC%20Compatibility/README.zh-CN.md)
   - 避免占用系统保留的内存区域 [🔗 技术Wiki：分配Trampoline时避免占用系统保留区域](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Avoid%20Occupying%20System%20Reserved%20Region%20When%20Allocating%20Trampoline/README.zh-CN.md)
   - 其它Bug修复与代码改进
 - 轻量
