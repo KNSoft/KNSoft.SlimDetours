@@ -14,6 +14,7 @@ Compared with the original [Detours](https://github.com/microsoft/Detours), it h
 - Improved
   - **Automatically updates threads when applying hooks** [🔗 TechWiki: Update Threads Automatically When Applying Inline Hooks](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Update%20Threads%20Automatically%20When%20Applying%20Inline%20Hooks/README.md)
   - **Avoid heap deadlocks when updating threads** [🔗 TechWiki: Avoid Heap Deadlocks When Updating Threads](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Avoid%20Heap%20Deadlocks%20When%20Updating%20Threads/README.md)
+  - **ARM64EC compatibility** [🔗 TechWiki: Implement ARM64EC Compatibility](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Implement%20ARM64EC%20Compatibility/README.md)
   - Avoid occupying system-reserved memory regions [🔗 TechWiki: Avoid Occupying System Reserved Region When Allocating Trampoline](https://github.com/KNSoft/KNSoft.SlimDetours/blob/main/Docs/TechWiki/Avoid%20Occupying%20System%20Reserved%20Region%20When%20Allocating%20Trampoline/README.md)
   - Other bug fixes and code improvements
 - Lite
