@@ -21,11 +21,12 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
     - name: Source checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
     - name: Prepare MSBuild
-      uses: microsoft/setup-msbuild@main
+      uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
     - name: Build
       run: msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=${{matrix.config}} /p:Platform=${{matrix.platform}} /p:RestorePackagesConfig=true
     - name: Run Unit Test
@@ -53,25 +54,46 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' && matrix.platform == 'x64' }}
       run: |
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run OutputDebugStringHook -Engine=SlimDetours
-  Publish:
-    if: ${{github.base_ref == '' && startsWith(github.event.head_commit.message, '[VERSION] ')}}
+  Package:
+    if: ${{github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, '[VERSION] ')}}
     needs: Build
     permissions:
-      contents: write
+      contents: read
     runs-on: windows-latest
+    outputs:
+      relver: ${{steps.relver.outputs.relver}}
     steps:
-    - name: Set release version
-      id: relver
-      shell: pwsh
-      run: |
-        $relver="${{github.event.head_commit.message}}".Substring(10)
-        Write-Output "relver=$relver">>$env:GITHUB_OUTPUT
     - name: Source checkout
-      uses: actions/checkout@main
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         submodules: recursive
+        persist-credentials: false
+    - name: Verify release version
+      id: relver
+      shell: pwsh
+      env:
+        COMMIT_MESSAGE: ${{github.event.head_commit.message}}
+      run: |
+        $Prefix = '[VERSION] '
+        $Message = $env:COMMIT_MESSAGE
+        if (!$Message.StartsWith($Prefix, [StringComparison]::Ordinal)) {
+          throw 'The commit message is not a version release message.'
+        }
+
+        $ReleaseVersion = $Message.Substring($Prefix.Length)
+        if ($ReleaseVersion -cnotmatch '\A(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?\z') {
+          throw "Invalid release version: $ReleaseVersion"
+        }
+
+        [xml]$Nuspec = Get-Content -LiteralPath .\Source\KNSoft.SlimDetours.nuspec
+        $PackageVersion = [string]$Nuspec.package.metadata.version
+        if ($PackageVersion -cne $ReleaseVersion) {
+          throw "Release version '$ReleaseVersion' does not match nuspec version '$PackageVersion'."
+        }
+
+        Write-Output "relver=$ReleaseVersion" >> $env:GITHUB_OUTPUT
     - name: Prepare MSBuild
-      uses: microsoft/setup-msbuild@main
+      uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
     - name: Build
       run: |
         msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=Release /p:Platform=x64 /p:RestorePackagesConfig=true
@@ -99,17 +121,58 @@ jobs:
         .\Source\OutDir\x86\Debug\Demo.exe -Run COMHook -Engine=SlimDetours
         .\Source\OutDir\x86\Debug\Demo.exe -Run DeadLock -Engine=SlimDetours
     - name: Create NuGet package
+      shell: pwsh
       run: |
+        New-Item -ItemType Directory -Path .\artifacts -Force | Out-Null
         cd .\Source
-        nuget pack
-    - name: Create release
-      uses: softprops/action-gh-release@v2
+        nuget pack -OutputDirectory ..\artifacts
+    - name: Upload NuGet package
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: v${{steps.relver.outputs.relver}}
-        tag_name: v${{steps.relver.outputs.relver}}
-        body: "(TO BE FILLED BY MAINTAINER)\n**NuGet Package**: https://www.nuget.org/packages/KNSoft.SlimDetours/${{steps.relver.outputs.relver}}"
+        name: NuGet-package
+        path: ./artifacts/KNSoft.SlimDetours.${{steps.relver.outputs.relver}}.nupkg
+        if-no-files-found: error
+        retention-days: 1
+  Publish:
+    needs: Package
+    permissions:
+      contents: write
+      id-token: write
+    runs-on: windows-latest
+    steps:
+    - name: Download NuGet package
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: NuGet-package
+        path: ./artifacts
+    - name: NuGet login
+      uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+      id: login
+      with:
+        user: Ratin
+    - name: Publish NuGet package
+      shell: pwsh
+      env:
+        NUGET_API_KEY: ${{steps.login.outputs.NUGET_API_KEY}}
+        PACKAGE_VERSION: ${{needs.Package.outputs.relver}}
+      run: |
+        $PackagePath = Join-Path $PWD "artifacts\KNSoft.SlimDetours.$env:PACKAGE_VERSION.nupkg"
+        if (!(Test-Path -LiteralPath $PackagePath -PathType Leaf)) {
+          throw "NuGet package not found: $PackagePath"
+        }
+
+        & dotnet nuget push $PackagePath --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
+    - name: Create release
+      uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+      with:
+        name: v${{needs.Package.outputs.relver}}
+        tag_name: v${{needs.Package.outputs.relver}}
+        body: "(TO BE FILLED BY MAINTAINER)\n**NuGet Package**: https://www.nuget.org/packages/KNSoft.SlimDetours/${{needs.Package.outputs.relver}}"
         prerelease: true
         preserve_order: true
         fail_on_unmatched_files: true
         generate_release_notes: true
-        files: ./Source/KNSoft.SlimDetours.${{steps.relver.outputs.relver}}.nupkg
+        files: ./artifacts/KNSoft.SlimDetours.${{needs.Package.outputs.relver}}.nupkg
