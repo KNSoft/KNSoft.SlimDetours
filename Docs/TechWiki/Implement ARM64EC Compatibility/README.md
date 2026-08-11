@@ -71,6 +71,6 @@ All combinations below were tested on a native ARM64 machine using the [COMHook]
 
 This work is licensed under [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](http://creativecommons.org/licenses/by-nc-sa/4.0/).  
 <br>
-**[Ratin](https://github.com/RatinCN) &lt;[<ratin@knsoft.org>](mailto:ratin@knsoft.org)&gt;**  
+**[Ratin](https://github.com/RatinCN) &lt;[ratin@knsoft.org](mailto:ratin@knsoft.org)&gt;**  
 *China national certified senior system architect*  
 *[ReactOS](https://github.com/reactos/reactos) contributor*

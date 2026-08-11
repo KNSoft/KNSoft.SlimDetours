@@ -67,6 +67,6 @@ ARM64EC Hook模块挂钩x64目标时同样存在两次ABI转换，但签名来�
 
 本作品采用 [知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议 (CC BY-NC-SA 4.0)](http://creativecommons.org/licenses/by-nc-sa/4.0/) 进行许可。  
 <br>
-**[Ratin](https://github.com/RatinCN) &lt;[<ratin@knsoft.org>](mailto:ratin@knsoft.org)&gt;**  
+**[Ratin](https://github.com/RatinCN) &lt;[ratin@knsoft.org](mailto:ratin@knsoft.org)&gt;**  
 *中国国家认证系统架构设计师*  
 *[ReactOS](https://github.com/reactos/reactos)贡献者*

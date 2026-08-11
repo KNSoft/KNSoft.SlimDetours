@@ -25,6 +25,12 @@
 
 另请参阅[待办列表](https://github.com/KNSoft/KNSoft.SlimDetours/milestones?with_issues=no)。
 
+## 使用SlimDetours的项目
+
+- [ExplorerPatcher](https://github.com/valinet/ExplorerPatcher)
+- [Windhawk](https://github.com/ramensoftware/windhawk)
+- ...
+
 ## 用法
 
 [![NuGet Downloads](https://img.shields.io/nuget/dt/KNSoft.SlimDetours)](https://www.nuget.org/packages/KNSoft.SlimDetours)

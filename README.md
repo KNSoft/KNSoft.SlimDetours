@@ -25,6 +25,12 @@ Compared with the original [Detours](https://github.com/microsoft/Detours), it h
 
 See also the [Todo List](https://github.com/KNSoft/KNSoft.SlimDetours/milestones?with_issues=no).
 
+## Projects using SlimDetours
+
+- [ExplorerPatcher](https://github.com/valinet/ExplorerPatcher)
+- [Windhawk](https://github.com/ramensoftware/windhawk)
+- ...
+
 ## Usage
 
 [![NuGet Downloads](https://img.shields.io/nuget/dt/KNSoft.SlimDetours)](https://www.nuget.org/packages/KNSoft.SlimDetours)
