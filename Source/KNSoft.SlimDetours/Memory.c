@@ -304,8 +304,14 @@ detour_memory_free(
 BOOL
 detour_memory_uninitialize(VOID)
 {
+    HANDLE Heap;
+
 #if defined(_M_ARM64EC)
-    HANDLE Heap = _InterlockedExchangePointer(&_detour_memory_heap, DETOUR_MEMORY_HEAP_UNINITIALIZING);
+    Heap = _InterlockedExchangePointer(&_detour_memory_heap, DETOUR_MEMORY_HEAP_UNINITIALIZING);
+#else
+    Heap = _detour_memory_heap;
+#endif
+
     if (Heap == RtlProcessHeap())
     {
         Heap = NULL;
@@ -313,17 +319,14 @@ detour_memory_uninitialize(VOID)
     {
         Heap = RtlDestroyHeap(Heap);
     }
-    _InterlockedExchangePointer(&_detour_memory_heap, Heap);
-    return Heap == NULL;
-#else
-    if (_detour_memory_heap != NULL && _detour_memory_heap != RtlProcessHeap())
-    {
-        _detour_memory_heap = RtlDestroyHeap(_detour_memory_heap);
-        return _detour_memory_heap == NULL;
-    }
 
-    return TRUE;
+#if defined(_M_ARM64EC)
+    _InterlockedExchangePointer(&_detour_memory_heap, Heap);
+#else
+    _detour_memory_heap = Heap;
 #endif
+
+    return Heap == NULL;
 }
 
 BOOL
