@@ -21,21 +21,11 @@ EXTERN_C_START
 
 typedef struct _DETOUR_ALIGN
 {
-#if defined(_M_ARM64) || defined(_M_ARM64EC)
-    // ARM64 obTarget can reach 12 bytes, while obTrampoline can reach 72 bytes.
     BYTE obTarget;
     BYTE obTrampoline;
-#else
-    BYTE obTarget : 3;
-    BYTE obTrampoline : 5;
-#endif
 } DETOUR_ALIGN, *PDETOUR_ALIGN;
 
-#if defined(_M_ARM64) || defined(_M_ARM64EC)
 _STATIC_ASSERT(sizeof(DETOUR_ALIGN) == 2);
-#else
-_STATIC_ASSERT(sizeof(DETOUR_ALIGN) == 1);
-#endif
 
 typedef struct _DETOUR_TRAMPOLINE
 {
@@ -102,9 +92,9 @@ typedef struct _DETOUR_TRAMPOLINE
 #if defined(_M_ARM64EC)
 _STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 208);
 #elif defined(_M_IX86)
-_STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 80);
+_STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 88);
 #elif defined(_M_X64)
-_STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 96);
+_STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 104);
 #elif defined(_M_ARM64)
 _STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 192);
 #endif
