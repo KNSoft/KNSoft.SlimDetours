@@ -56,6 +56,10 @@
 //      instruction.  By subtracting pSrc from the return value, the caller
 //      can determinte the size of the instruction copied.
 //
+//      Returns NULL if the bytes at pSrc are not an instruction this
+//      disassembler recognises, or if measuring one would read past the
+//      15-byte architectural maximum.  pDst is unusable in that case.
+//
 //  Comments:
 //      By following the pTarget, the caller can follow alternate
 //      instruction streams.  However, it is not always possible to determine
@@ -93,6 +97,8 @@ typedef struct _DETOUR_DISASM
     BOOL    bF3; // x86 only
     BYTE    nSegmentOverride;
 
+    PBYTE   pbStart;    // first byte of the instruction being measured
+
     PBYTE*  ppbTarget;
     LONG*   plExtra;
 
@@ -100,6 +106,11 @@ typedef struct _DETOUR_DISASM
     PBYTE   pbScratchTarget;
     BYTE    rbScratchDst[64]; // scratch space for copied x86/x64 instructions
 } DETOUR_DISASM, *PDETOUR_DISASM;
+
+// No instruction is longer than this, so a read past it is a read of whatever
+// follows the instruction stream rather than part of the instruction. On a
+// function that ends near a page boundary that read can fault.
+#define DETOUR_MAX_INSTRUCTION_LENGTH 15
 
 static
 VOID
@@ -116,12 +127,24 @@ detour_disasm_init(
     pDisasm->bVex = FALSE;
     pDisasm->bEvex = FALSE;
     pDisasm->bEvexMap4 = FALSE;
+    pDisasm->nSegmentOverride = 0;
 
     pDisasm->ppbTarget = ppbTarget ? ppbTarget : &pDisasm->pbScratchTarget;
     pDisasm->plExtra = plExtra ? plExtra : &pDisasm->lScratchExtra;
 
     *pDisasm->ppbTarget = (PBYTE)DETOUR_INSTRUCTION_TARGET_NONE;
     *pDisasm->plExtra = 0;
+}
+
+// Whether the nBytes bytes at pbSrc are still inside the instruction.
+static
+BOOL
+detour_readable(
+    _In_ PDETOUR_DISASM pDisasm,
+    _In_ PBYTE pbSrc,
+    UINT nBytes)
+{
+    return (SIZE_T)(pbSrc + nBytes - pDisasm->pbStart) <= DETOUR_MAX_INSTRUCTION_LENGTH;
 }
 
 typedef const struct _COPYENTRY *REFCOPYENTRY;
@@ -615,7 +638,11 @@ static const BYTE g_rceCopyTable[] =
     /* D4 */ eENTRY_CopyBytes2,                     // AAM
     /* D5 */ eENTRY_CopyBytes2,                     // AAD
 #endif
+#if defined(_M_X64)
     /* D6 */ eENTRY_Invalid,                        // Invalid
+#else
+    /* D6 */ eENTRY_CopyBytes1,                     // SALC (undocumented)
+#endif
     /* D7 */ eENTRY_CopyBytes1,                     // XLAT/XLATB
     /* D8 */ eENTRY_CopyBytes2Mod,                  // FADD, etc.
     /* D9 */ eENTRY_CopyBytes2Mod,                  // F2XM1, etc.
@@ -706,10 +733,10 @@ static const BYTE g_rceCopyTable0F[] =
     /* 1D */ eENTRY_CopyBytes2Mod,                  // NOP/r multi byte nop, not documented by Intel, documented by AMD
     /* 1E */ eENTRY_CopyBytes2Mod,                  // NOP/r multi byte nop, not documented by Intel, documented by AMD
     /* 1F */ eENTRY_CopyBytes2Mod,                  // NOP/r multi byte nop
-    /* 20 */ eENTRY_CopyBytes2Mod,                  // MOV/r
-    /* 21 */ eENTRY_CopyBytes2Mod,                  // MOV/r
-    /* 22 */ eENTRY_CopyBytes2Mod,                  // MOV/r
-    /* 23 */ eENTRY_CopyBytes2Mod,                  // MOV/r
+    /* 20 */ eENTRY_CopyBytes2,                     // MOV/r CRn, mod ignored
+    /* 21 */ eENTRY_CopyBytes2,                     // MOV/r DRn, mod ignored
+    /* 22 */ eENTRY_CopyBytes2,                     // MOV/r CRn, mod ignored
+    /* 23 */ eENTRY_CopyBytes2,                     // MOV/r DRn, mod ignored
 #if defined(_M_X64)
     /* 24 */ eENTRY_Invalid,                        // _24
 #else
@@ -889,7 +916,7 @@ static const BYTE g_rceCopyTable0F[] =
 #else
     /* B8 */ eENTRY_CopyBytes2Mod,                  // f3/popcnt
 #endif
-    /* B9 */ eENTRY_Invalid,                        // _B9
+    /* B9 */ eENTRY_Invalid,                        // UD1, a ModR/M byte on some processors and none on others
     /* BA */ eENTRY_CopyBytes2Mod1,                 // BT & BTC & BTR & BTS (0F BA)
     /* BB */ eENTRY_CopyBytes2Mod,                  // BTC (0F BB)
     /* BC */ eENTRY_CopyBytes2Mod,                  // BSF (0F BC)
@@ -959,7 +986,7 @@ static const BYTE g_rceCopyTable0F[] =
     /* FC */ eENTRY_CopyBytes2Mod,                  // PADDB/r
     /* FD */ eENTRY_CopyBytes2Mod,                  // PADDW/r
     /* FE */ eENTRY_CopyBytes2Mod,                  // PADDD/r
-    /* FF */ eENTRY_Invalid,                        // _FF
+    /* FF */ eENTRY_Invalid,                        // UD0, a ModR/M byte on some processors and none on others
 };
 
 _STATIC_ASSERT(_countof(g_rbModRm) == 256 &&
@@ -1068,6 +1095,7 @@ Invalid(
     UNREFERENCED_PARAMETER(pbDst);
     UNREFERENCED_PARAMETER(pbSrc);
 
+    ASSERT(!"Invalid Instruction");
     return NULL;
 }
 
@@ -1084,12 +1112,36 @@ CopyInstruction(
         pbDst = pDisasm->rbScratchDst;
     }
 
+    pDisasm->pbStart = pbSrc;
+
     // Figure out how big the instruction is, do the appropriate copy,
     // and figure out what the target of the instruction is if any.
     //
     const COPYENTRY* ce = &g_rceCopyMap[g_rceCopyTable[pbSrc[0]]];
     return ce->pfCopy(pDisasm, ce, pbDst, pbSrc);
 }
+
+#if defined(_M_IX86)
+
+// Displacement bytes a ModR/M carries under 16-bit addressing, where g_rbModRm
+// does not apply: there is no SIB byte, mod 0 carries a disp16 only for rm 6,
+// mod 1 a disp8 and mod 2 a disp16. Only 32-bit mode can reach it, since 0x67
+// in long mode selects 32-bit addressing.
+static
+BYTE
+ModRm16Bytes(
+    BYTE bModRm)
+{
+    switch (bModRm & 0xc0)
+    {
+        case 0x00: return ((bModRm & 0x07) == 0x06) ? 2 : 0;
+        case 0x40: return 1;
+        case 0x80: return 2;
+        default:   return 0;
+    }
+}
+
+#endif
 
 static
 PBYTE
@@ -1140,37 +1192,60 @@ CopyBytes(
     if (nModOffset > 0)
     {
         ASSERT(nRelOffset == 0);
+        if (!detour_readable(pDisasm, pbSrc, nModOffset + 1))
+        {
+            return NULL;
+        }
         BYTE const bModRm = pbSrc[nModOffset];
-        BYTE const bFlags = g_rbModRm[bModRm];
 
-        nBytes += bFlags & NOTSIB;
-
-        if (bFlags & SIB)
+#if defined(_M_IX86)
+        // 0x67 here selects 16-bit addressing, not 32-bit as it does in long
+        // mode, and the ModR/M byte is read under different rules.
+        if (pDisasm->bAddressOverride)
         {
-            BYTE const bSib = pbSrc[nModOffset + 1];
-
-            if ((bSib & 0x07) == 0x05)
-            {
-                if ((bModRm & 0xc0) == 0x00)
-                {
-                    nBytes += 4;
-                } else if ((bModRm & 0xc0) == 0x40)
-                {
-                    nBytes += 1;
-                } else if ((bModRm & 0xc0) == 0x80)
-                {
-                    nBytes += 4;
-                }
-            }
-            cbTarget = nBytes - nRelOffset;
-        }
-#if defined(_M_X64)
-        else if (bFlags & RIP)
-        {
-            nRelOffset = nModOffset + 1;
-            cbTarget = 4;
-        }
+            nBytes += ModRm16Bytes(bModRm);
+        } else
 #endif
+        {
+            BYTE const bFlags = g_rbModRm[bModRm];
+
+            nBytes += bFlags & NOTSIB;
+
+            if (bFlags & SIB)
+            {
+                if (!detour_readable(pDisasm, pbSrc, nModOffset + 2))
+                {
+                    return NULL;
+                }
+                BYTE const bSib = pbSrc[nModOffset + 1];
+
+                if ((bSib & 0x07) == 0x05)
+                {
+                    if ((bModRm & 0xc0) == 0x00)
+                    {
+                        nBytes += 4;
+                    } else if ((bModRm & 0xc0) == 0x40)
+                    {
+                        nBytes += 1;
+                    } else if ((bModRm & 0xc0) == 0x80)
+                    {
+                        nBytes += 4;
+                    }
+                }
+                cbTarget = nBytes - nRelOffset;
+            }
+#if defined(_M_X64)
+            else if (bFlags & RIP)
+            {
+                nRelOffset = nModOffset + 1;
+                cbTarget = 4;
+            }
+#endif
+        }
+    }
+    if (!detour_readable(pDisasm, pbSrc, nBytes))
+    {
+        return NULL;
     }
     CopyMemory(pbDst, pbSrc, nBytes);
 
@@ -1203,7 +1278,16 @@ CopyBytesPrefix(
     _In_opt_ REFCOPYENTRY pEntry,
     _In_ PBYTE pbDst, _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
+
+    // REX is only significant as the last prefix before the opcode. Reaching
+    // another legacy prefix means any REX before it is ignored.
+    pDisasm->bRaxOverride = FALSE;
 
     pbDst[0] = pbSrc[0];
 
@@ -1237,11 +1321,20 @@ CopyBytesRax(
 
     UNREFERENCED_PARAMETER(pEntry);
 
-    if (pbSrc[0] & 0x8)
+    if (!detour_readable(pDisasm, pbSrc, 2))
     {
-        pDisasm->bRaxOverride = TRUE;
+        return NULL;
     }
-    return CopyBytesPrefix(pDisasm, NULL, pbDst, pbSrc);
+
+    // Only the last REX before the opcode carries, so W is assigned rather
+    // than accumulated. Dispatching here instead of through CopyBytesPrefix
+    // keeps that from being cleared as a legacy prefix would clear it.
+    pDisasm->bRaxOverride = (pbSrc[0] & 0x8) != 0;
+
+    pbDst[0] = pbSrc[0];
+
+    REFCOPYENTRY ce = &g_rceCopyMap[g_rceCopyTable[pbSrc[1]]];
+    return ce->pfCopy(pDisasm, ce, pbDst + 1, pbSrc + 1);
 }
 
 static
@@ -1252,6 +1345,11 @@ CopyBytesJump(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
     PVOID pvSrcAddr = &pbSrc[1];
@@ -1294,6 +1392,11 @@ Copy0F(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
     pbDst[0] = pbSrc[0];
@@ -1336,6 +1439,11 @@ Copy0F00(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     // jmpe is 32bit x86 only
     // Notice that the sizes are the same either way, but jmpe is marked as "dynamic".
 
@@ -1356,6 +1464,11 @@ Copy0FB8(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     // jmpe is 32bit x86 only
 
     UNREFERENCED_PARAMETER(pEntry);
@@ -1436,6 +1549,11 @@ CopyF6(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
     // TEST BYTE /0 and /1 (/1 is an undocumented alias of /0).
@@ -1465,6 +1583,11 @@ CopyF7(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
     // TEST WORD /0 and /1 (see CopyF6 for /1 rationale).
@@ -1494,6 +1617,11 @@ CopyC7(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
     if (pbSrc[1] == 0xF8)
@@ -1517,6 +1645,11 @@ CopyFF(
     _In_ PBYTE pbDst,
     _In_ PBYTE pbSrc)
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     // INC /0
     // DEC /1
     // CALL /2
@@ -1535,6 +1668,11 @@ CopyFF(
 
     REFCOPYENTRY ce = /* ff */ &g_rceCopyMap[eENTRY_CopyBytes2Mod];
     PBYTE pbOut = ce->pfCopy(pDisasm, ce, pbDst, pbSrc);
+
+    if (pbOut == NULL)
+    {
+        return NULL;
+    }
 
     if (0x15 == b1 || 0x25 == b1)
     {
@@ -1581,6 +1719,11 @@ CopyVexEvexCommon(
 {
     REFCOPYENTRY ce;
 
+    if (!detour_readable(pDisasm, pbSrc, 1))
+    {
+        return NULL;
+    }
+
     switch (p & 3)
     {
         case 0:
@@ -1607,6 +1750,25 @@ CopyVexEvexCommon(
     {
         case 5:
         case 1:
+            // Opcodes whose legacy 0F entry does not describe the form an
+            // escape reaches: 37 is GETSEC and takes no ModR/M, 38 and 3A are
+            // the three-byte escapes, whose entries put ModR/M one place
+            // further along, 7A and 7B are undefined, and 78 is extrq/insertq
+            // off a real 66 or F2, where under an escape pp is a mandatory
+            // prefix. VEX defines none of the six and its maps are closed, so
+            // there they are refused. The EVEX maps are still growing, and
+            // nearly everything in map 1 and map 5 is a plain ModR/M, so an
+            // opcode this table has not caught up with is measured as one
+            // rather than refused.
+            if (pbSrc[0] == 0x37 || pbSrc[0] == 0x38 || pbSrc[0] == 0x3A ||
+                pbSrc[0] == 0x78 || pbSrc[0] == 0x7A || pbSrc[0] == 0x7B)
+            {
+                if (!pDisasm->bEvex)
+                {
+                    return Invalid(pDisasm, &g_rceCopyMap[eENTRY_Invalid], pbDst, pbSrc);
+                }
+                return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytes2Mod], pbDst, pbSrc);
+            }
             ce = &g_rceCopyMap[g_rceCopyTable0F[pbSrc[0]]];
             return ce->pfCopy(pDisasm, ce, pbDst, pbSrc);
         case 6:
@@ -1615,9 +1777,17 @@ CopyVexEvexCommon(
         case 3:
             return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytes2Mod1], pbDst, pbSrc); /* 3A ceF3A */
         case 4:
-            pDisasm->bEvexMap4 = pDisasm->bEvex;
-            ce = &g_rceCopyMap[g_rceCopyTable[pbSrc[0]]];
-            return ce->pfCopy(pDisasm, ce, pbDst, pbSrc);
+            // APX promotes legacy instructions into map 4, but the map is its
+            // own opcode space rather than a copy of the legacy one-byte one:
+            // 40-4F are CFCMOVcc and not REX prefixes, 24 is SHLD, 60 is MOVBE.
+            // Reading it through g_rceCopyTable mismeasures those, and where a
+            // legacy prefix entry is hit it dispatches on the ModR/M byte as
+            // though it were an opcode, which names branch targets that do not
+            // exist and rewrites absolute addresses as relative ones. Nothing
+            // decodes map 4 yet, so refusing it costs a caller nothing that
+            // works today, and measuring it wrong would cost a corrupted
+            // trampoline. bEvexMap4 stays for whoever writes the real table.
+            return Invalid(pDisasm, &g_rceCopyMap[eENTRY_Invalid], pbDst, pbSrc);
         default:
             return Invalid(pDisasm, &g_rceCopyMap[eENTRY_Invalid], pbDst, pbSrc); /* C4 ceInvalid */
     }
@@ -1633,6 +1803,13 @@ CopyVexCommon(
 // m is first instead of last in the hopes of pbDst/pbSrc being
 // passed along efficiently in the registers they were already in.
 {
+    // VEX names its map in five bits but only defines 1, 2 and 3. The wider
+    // range belongs to EVEX, whose maps must not be reachable from here.
+    if (m > 3)
+    {
+        return Invalid(pDisasm, &g_rceCopyMap[eENTRY_Invalid], pbDst, pbSrc);
+    }
+
     pDisasm->bVex = TRUE;
     return CopyVexEvexCommon(pDisasm, m, pbDst, pbSrc, (BYTE)(pbSrc[-1] & 3), 0);
 }
@@ -1646,6 +1823,11 @@ CopyVex3(
     _In_ PBYTE pbSrc)
 // 3 byte VEX prefix 0xC4
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
 #if defined(_M_IX86)
@@ -1655,6 +1837,10 @@ CopyVex3(
         return ce->pfCopy(pDisasm, ce, pbDst, pbSrc);
     }
 #endif
+    if (!detour_readable(pDisasm, pbSrc, 3))
+    {
+        return NULL;
+    }
     pbDst[0] = pbSrc[0];
     pbDst[1] = pbSrc[1];
     pbDst[2] = pbSrc[2];
@@ -1699,6 +1885,11 @@ CopyVex2(
     _In_ PBYTE pbSrc)
 // 2 byte VEX prefix 0xC5
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
 #if defined(_M_IX86)
     if ((pbSrc[1] & 0xC0) != 0xC0)
     {
@@ -1721,6 +1912,11 @@ CopyEvex(
 // 62, 3 byte payload, x86 with implied prefixes like Vex
 // for 32bit, mode 0xC0 else fallback to bound /r
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     // NOTE: Intel and Wikipedia number these differently.
     // Intel says 0-2, Wikipedia says 1-3.
 
@@ -1733,10 +1929,12 @@ CopyEvex(
     }
 #endif
 
-    BYTE const p1 = pbSrc[2];
+    if (!detour_readable(pDisasm, pbSrc, 4))
+    {
+        return NULL;
+    }
 
-    if ((p1 & 0x04) != 0x04)
-        return Invalid(pDisasm, &g_rceCopyMap[eENTRY_Invalid], pbDst, pbSrc); /* 62 ceInvalid */
+    BYTE const p1 = pbSrc[2];
 
     // Copy 4 byte prefix.
     *(UNALIGNED ULONG*)pbDst = *(UNALIGNED ULONG*)pbSrc;
@@ -1771,6 +1969,11 @@ mmmmm only otherwise defined for 8, 9, A.
 pp is like VEX but only instructions with 0 are defined
 */
 {
+    if (!detour_readable(pDisasm, pbSrc, 2))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
     BYTE const m = (BYTE)(pbSrc[1] & 0x1F);
@@ -1787,6 +1990,13 @@ pp is like VEX but only instructions with 0 are defined
             return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytesXop4], pbDst, pbSrc); /* 8F ceXop4 */
 
         default:
+            // 8F is POP r/m only with a reg field of 0. Any other reg field
+            // makes the byte an XOP escape, and the map it names is one of
+            // the three above or none at all.
+            if ((pbSrc[1] & 0x38) != 0)
+            {
+                return Invalid(pDisasm, &g_rceCopyMap[eENTRY_Invalid], pbDst, pbSrc);
+            }
             return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytes2Mod], pbDst, pbSrc); /* 8F cePop */
     }
 }
@@ -1804,6 +2014,11 @@ CopyRex2(
 //   M: 0 = opcode from MAP0, 1 = opcode from MAP1 (no 0F escape needed)
 //   W: operand size override to 64-bit (same as REX.W)
 {
+    if (!detour_readable(pDisasm, pbSrc, 3))
+    {
+        return NULL;
+    }
+
     UNREFERENCED_PARAMETER(pEntry);
 
     BYTE const payload = pbSrc[1];
@@ -1827,10 +2042,20 @@ CopyRex2(
         pbOut = ce->pfCopy(pDisasm, ce, pbDst + 2, pbSrc + 2);
     }
 
+    if (pbOut == NULL)
+    {
+        return NULL;
+    }
+
     // JMPABS: REX2 with M=0, W=0, and opcode A1. Other payload bits are ignored.
     // This is an absolute 64-bit jump whose target is the 8-byte immediate.
     if ((payload & 0x88) == 0x00 && pbSrc[2] == 0xA1)
     {
+        // D5, the payload, A1 and the immediate: 11 bytes in all.
+        if (!detour_readable(pDisasm, pbSrc, 11))
+        {
+            return NULL;
+        }
         *pDisasm->ppbTarget = *(UNALIGNED PBYTE*) & pbSrc[3];
     }
 
