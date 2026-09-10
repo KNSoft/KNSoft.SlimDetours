@@ -190,6 +190,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ChainedHook.c" />
     <ClCompile Include="COMHook.c" />
     <ClCompile Include="DeadLock.c" />
     <ClCompile Include="DelayHook.c" />

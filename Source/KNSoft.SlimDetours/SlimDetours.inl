@@ -10,9 +10,11 @@
 #if _DEBUG
 #define DETOUR_TRACE DbgPrint
 #define DETOUR_BREAK() __debugbreak()
+#define DETOUR_ASSERT(Expression) ((Expression) ? (VOID)0 : __debugbreak())
 #else
 #define DETOUR_TRACE(Format, ...)
 #define DETOUR_BREAK()
+#define DETOUR_ASSERT(Expression) ((VOID)0)
 #endif
 
 EXTERN_C_START
@@ -65,7 +67,7 @@ typedef struct _DETOUR_TRAMPOLINE
 #elif defined(_M_IX86) || defined(_M_X64)
     BYTE            rbCode[30];         // target code + jmp to pbRemain.
 #endif
-    BYTE            cbCode;             // size of moved target code.
+    BYTE            cbCode;             // size of the code in rbCode.
 #if defined(_M_ARM64) || defined(_M_ARM64EC)
     BYTE            cbCodeBreak[3];     // padding to make debugging easier.
 #elif defined(_M_IX86) || defined(_M_X64)
@@ -109,6 +111,7 @@ struct _DETOUR_OPERATION
     PDETOUR_OPERATION pNext;
     BOOL fIsAdd : 1;
     BOOL fIsRemove : 1;
+    BOOL fIsRestored : 1;   // removal only: the target code was put back.
 #if defined(_M_ARM64EC)
     BOOL fTargetArm64Ec : 1;
 #endif
@@ -220,6 +223,16 @@ BOOL
 detour_is_jmp_indirect_to(
     _In_ PBYTE pbCode,
     _In_ PBYTE* ppbJmpVal);
+
+#if defined(_M_X64)
+
+_Ret_notnull_
+PBYTE
+detour_gen_jmp_aligned_literal(
+    _In_ PBYTE pbCode,
+    _In_ PBYTE pbJmpVal);
+
+#endif
 
 #endif
 
