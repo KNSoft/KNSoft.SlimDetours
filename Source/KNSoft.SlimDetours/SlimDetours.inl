@@ -102,13 +102,19 @@ _STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 104);
 _STATIC_ASSERT(sizeof(DETOUR_TRAMPOLINE) == 192);
 #endif
 
+enum
+{
+    DETOUR_OPERATION_NONE = 0,
+    DETOUR_OPERATION_ADD,
+    DETOUR_OPERATION_REMOVE,
+};
+
 typedef struct _DETOUR_OPERATION DETOUR_OPERATION, *PDETOUR_OPERATION;
 
 struct _DETOUR_OPERATION
 {
     PDETOUR_OPERATION pNext;
-    BOOL fIsAdd : 1;
-    BOOL fIsRemove : 1;
+    DWORD dwOperation;
 #if defined(_M_ARM64EC)
     BOOL fTargetArm64Ec : 1;
 #endif
@@ -116,6 +122,7 @@ struct _DETOUR_OPERATION
     PBYTE pbTarget;
     PDETOUR_TRAMPOLINE pTrampoline;
     ULONG dwPerm;
+    PVOID* ppTrampolineToFreeManually;
 };
 
 /* Memory management */
