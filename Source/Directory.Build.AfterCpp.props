@@ -1,4 +1,32 @@
 ﻿<Project>
+    <!-- [Project properties] -->
+
+    <ItemGroup>
+        <PropertyPageSchema Include="$(MSBuildThisFileDirectory)KNSoft.xml" />
+    </ItemGroup>
+
+    <!-- ARM64EC does not support explicitly disabling global data optimization with /Gw- -->
+    <PropertyGroup Condition="'$(Platform)' == 'ARM64EC'">
+        <OptimizeGlobalData Condition="'$(OptimizeGlobalData)' == ''">true</OptimizeGlobalData>
+    </PropertyGroup>
+
+    <!-- Debug defaults -->
+    <PropertyGroup Condition="$(Configuration.Contains(`Debug`))">
+        <OptimizeGlobalData Condition="'$(OptimizeGlobalData)' == ''">false</OptimizeGlobalData>
+        <OmitCoffGroupInfo Condition="'$(OmitCoffGroupInfo)' == ''">false</OmitCoffGroupInfo>
+        <OmitRichHeader Condition="'$(OmitRichHeader)' == ''">false</OmitRichHeader>
+    </PropertyGroup>
+
+    <!-- Release defaults -->
+    <PropertyGroup Condition="$(Configuration.Contains(`Release`))">
+        <!-- /Gw must be enabled when static library objects are compiled; consumers cannot apply it retroactively.
+             Enable it for Release static libraries so final links can discard unused global data, but preserve MSVC's default for EXE/DLL. -->
+        <OptimizeGlobalData Condition="'$(OptimizeGlobalData)' == '' and '$(ConfigurationType)' == 'StaticLibrary'">true</OptimizeGlobalData>
+        <OptimizeGlobalData Condition="'$(OptimizeGlobalData)' == ''">false</OptimizeGlobalData>
+        <OmitCoffGroupInfo Condition="'$(OmitCoffGroupInfo)' == ''">true</OmitCoffGroupInfo>
+        <OmitRichHeader Condition="'$(OmitRichHeader)' == ''">true</OmitRichHeader>
+    </PropertyGroup>
+
     <!-- [Overwrite defaults] -->
 
     <!-- Use the latest installed Windows SDK -->
@@ -66,4 +94,115 @@
             <PreprocessorDefinitions>$(KnsoftAsmPredefined);%(PreprocessorDefinitions)</PreprocessorDefinitions>
         </MARMASM>
     </ItemDefinitionGroup>
+
+    <!-- Encode KNSoft.NDK NT versions independently of its headers; keep aliases selectable in KNSoft.xml. -->
+    <PropertyGroup>
+        <KnsoftTargetNtVersionMin Condition="'$(KnsoftTargetNtVersionMin)' == ''">NT_VERSION_WIN10</KnsoftTargetNtVersionMin>
+        <_KnsoftTargetNtVersionMinValue />
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN2K'">0x05000000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WINXP'">0x05010000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WS2K3'">0x05020000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_VISTA'">0x06000000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN7'">0x06010000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN8'">0x06020000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WINBLUE'">0x06030000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == '' or '$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10'">0x0A000000</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_TH'">0x0A002800</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1507'">0x0A002800</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_TH2'">0x0A00295A</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1511'">0x0A00295A</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_RS1'">0x0A003839</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1607'">0x0A003839</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_RS2'">0x0A003AD7</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1703'">0x0A003AD7</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_RS3'">0x0A003FAB</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1709'">0x0A003FAB</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_RS4'">0x0A0042EE</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1803'">0x0A0042EE</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_RS5'">0x0A004563</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1809'">0x0A004563</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_19H1'">0x0A0047BA</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1903'">0x0A0047BA</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_19H2'">0x0A0047BB</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_1909'">0x0A0047BB</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_20H1'">0x0A004A61</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_2004'">0x0A004A61</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_20H2'">0x0A004A62</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_21H1'">0x0A004A63</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_21H2'">0x0A004A64</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN10_22H2'">0x0A004A65</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WS2K22'">0x0A004F7C</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN11'">0x0A0055F0</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN11_21H2'">0x0A0055F0</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN11_22H2'">0x0A00585D</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN11_23H2'">0x0A005867</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN11_24H2'">0x0A0065F4</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN11_25H2'">0x0A006658</_KnsoftTargetNtVersionMinValue>
+        <_KnsoftTargetNtVersionMinValue Condition="'$(KnsoftTargetNtVersionMin)' == 'NT_VERSION_WIN11_26H1'">0x0A006D60</_KnsoftTargetNtVersionMinValue>
+    </PropertyGroup>
+    <ItemDefinitionGroup Condition="'$(_KnsoftTargetNtVersionMinValue)' != ''">
+        <ClCompile>
+            <PreprocessorDefinitions>NT_VERSION_MIN=$(_KnsoftTargetNtVersionMinValue);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+        </ClCompile>
+    </ItemDefinitionGroup>
+
+    <Target Name="KNSoftValidateMinimumNtVersion" BeforeTargets="PrepareForBuild;ClCompile">
+        <Error Condition="'$(KnsoftTargetNtVersionMin)' != '' and '$(_KnsoftTargetNtVersionMinValue)' == ''"
+               Text="KNSoft: Unsupported Minimum NT Version '$(KnsoftTargetNtVersionMin)'. Select a version listed in KNSoft.MSVC or clear the property." />
+    </Target>
+
+    <Target Name="KNSoftCustomizeCompilerOptions"
+            BeforeTargets="ClCompile"
+            Condition="'@(ClCompile)' != '' and '$(OptimizeGlobalData)' == 'true'">
+        <ItemGroup>
+            <ClCompile Update="@(ClCompile)">
+                <AdditionalOptions>%(ClCompile.AdditionalOptions) /Gw</AdditionalOptions>
+            </ClCompile>
+        </ItemGroup>
+    </Target>
+
+    <!-- Keep non-preprocessed MARMASM output in IntDir; preprocessed items derive it from their generated source path -->
+    <Target Name="KNSoftCustomizeMARMASMOptions"
+            BeforeTargets="_CreateDirsForMARMASM"
+            Condition="'@(MARMASM)' != ''">
+        <ItemGroup>
+            <MARMASM Update="@(MARMASM)" Condition="'%(MARMASM.PreprocessWithCl)' != 'true' and '%(MARMASM.ObjectFileName)' == '%(MARMASM.RootDir)%(MARMASM.Directory)%(MARMASM.FileName).obj'">
+                <ObjectFileName>$(IntDir)%(MARMASM.RelativeDir)%(MARMASM.FileName).obj</ObjectFileName>
+            </MARMASM>
+        </ItemGroup>
+    </Target>
+
+    <Target Name="KNSoftCustomizeLinkerOptions"
+            AfterTargets="ComputeLinkSwitches"
+            BeforeTargets="Link"
+            Condition="'@(Link)' != '' and $(Configuration.Contains(`Release`))">
+        <Message Condition="'$(OmitCoffGroupInfo)' == 'true' and
+                            ('%(Link.LinkTimeCodeGeneration)' == 'PGInstrument' or
+                             '%(Link.LinkTimeCodeGeneration)' == 'PGOptimization' or
+                             '%(Link.LinkTimeCodeGeneration)' == 'PGUpdate')"
+                 Importance="High"
+                 Text="KNSoft: Omit COFF Group Information is ignored because PGO is enabled." />
+        <Message Condition="'$(OmitRichHeader)' == 'true' and
+                            ('%(Link.LinkTimeCodeGeneration)' == 'PGInstrument' or
+                             '%(Link.LinkTimeCodeGeneration)' == 'PGOptimization' or
+                             '%(Link.LinkTimeCodeGeneration)' == 'PGUpdate')"
+                 Importance="High"
+                 Text="KNSoft: Omit Rich Header is ignored because PGO is enabled." />
+        <ItemGroup>
+            <Link Condition="'$(OmitCoffGroupInfo)' == 'true' and
+                             '%(Link.LinkTimeCodeGeneration)' != 'PGInstrument' and
+                             '%(Link.LinkTimeCodeGeneration)' != 'PGOptimization' and
+                             '%(Link.LinkTimeCodeGeneration)' != 'PGUpdate'">
+                <AdditionalOptions>%(Link.AdditionalOptions) /NOCOFFGRPINFO</AdditionalOptions>
+            </Link>
+        </ItemGroup>
+        <ItemGroup>
+            <Link Condition="'$(OmitRichHeader)' == 'true' and
+                             '%(Link.LinkTimeCodeGeneration)' != 'PGInstrument' and
+                             '%(Link.LinkTimeCodeGeneration)' != 'PGOptimization' and
+                             '%(Link.LinkTimeCodeGeneration)' != 'PGUpdate'">
+                <AdditionalOptions>%(Link.AdditionalOptions) /EMITTOOLVERSIONINFO:NO</AdditionalOptions>
+            </Link>
+        </ItemGroup>
+    </Target>
 </Project>

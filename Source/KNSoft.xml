@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Rule Name="KNSoftMSVC"
+      DisplayName="KNSoft.MSVC"
+      PageTemplate="generic"
+      Order="9"
+      xmlns="http://schemas.microsoft.com/build/2009/properties">
+  <Rule.Categories>
+    <Category Name="Compiler" DisplayName="Compiler" />
+    <Category Name="Linker" DisplayName="Linker" />
+  </Rule.Categories>
+
+  <Rule.DataSource>
+    <DataSource Persistence="ProjectFile" HasConfigurationCondition="true" />
+  </Rule.DataSource>
+
+  <EnumProperty Name="KnsoftTargetNtVersionMin"
+                DisplayName="Minimum NT Version"
+                Description="Define NT_VERSION_MIN as the encoded minimum NT version for C/C++. Defaults to Windows 10 (10.0.0) when not selected."
+                Category="Compiler">
+    <EnumProperty.DataSource>
+      <DataSource Persistence="ProjectFile" Label="Configuration" HasConfigurationCondition="true" />
+    </EnumProperty.DataSource>
+    <EnumValue Name="NT_VERSION_WIN11_26H1" DisplayName="Windows 11 26H1 (10.0.28000, 0x0A006D60)" />
+    <EnumValue Name="NT_VERSION_WIN11_25H2" DisplayName="Windows 11 25H2 (10.0.26200, 0x0A006658)" />
+    <EnumValue Name="NT_VERSION_WIN11_24H2" DisplayName="Windows 11 24H2 (10.0.26100, 0x0A0065F4)" />
+    <EnumValue Name="NT_VERSION_WIN11_23H2" DisplayName="Windows 11 23H2 (10.0.22631, 0x0A005867)" />
+    <EnumValue Name="NT_VERSION_WIN11_22H2" DisplayName="Windows 11 22H2 (10.0.22621, 0x0A00585D)" />
+    <EnumValue Name="NT_VERSION_WIN11_21H2" DisplayName="Windows 11 21H2 (10.0.22000, 0x0A0055F0)" />
+    <EnumValue Name="NT_VERSION_WIN11" DisplayName="Windows 11 (10.0.22000, 0x0A0055F0)" />
+    <EnumValue Name="NT_VERSION_WS2K22" DisplayName="Windows Server 2022 (10.0.20348, 0x0A004F7C)" />
+    <EnumValue Name="NT_VERSION_WIN10_22H2" DisplayName="Windows 10 22H2 (10.0.19045, 0x0A004A65)" />
+    <EnumValue Name="NT_VERSION_WIN10_21H2" DisplayName="Windows 10 21H2 (10.0.19044, 0x0A004A64)" />
+    <EnumValue Name="NT_VERSION_WIN10_21H1" DisplayName="Windows 10 21H1 (10.0.19043, 0x0A004A63)" />
+    <EnumValue Name="NT_VERSION_WIN10_20H2" DisplayName="Windows 10 20H2 (10.0.19042, 0x0A004A62)" />
+    <EnumValue Name="NT_VERSION_WIN10_2004" DisplayName="Windows 10 2004 (10.0.19041, 0x0A004A61)" />
+    <EnumValue Name="NT_VERSION_WIN10_20H1" DisplayName="Windows 10 20H1 (10.0.19041, 0x0A004A61)" />
+    <EnumValue Name="NT_VERSION_WIN10_1909" DisplayName="Windows 10 1909 (10.0.18363, 0x0A0047BB)" />
+    <EnumValue Name="NT_VERSION_WIN10_19H2" DisplayName="Windows 10 19H2 (10.0.18363, 0x0A0047BB)" />
+    <EnumValue Name="NT_VERSION_WIN10_1903" DisplayName="Windows 10 1903 (10.0.18362, 0x0A0047BA)" />
+    <EnumValue Name="NT_VERSION_WIN10_19H1" DisplayName="Windows 10 19H1 (10.0.18362, 0x0A0047BA)" />
+    <EnumValue Name="NT_VERSION_WIN10_1809" DisplayName="Windows 10 1809 (10.0.17763, 0x0A004563)" />
+    <EnumValue Name="NT_VERSION_WIN10_RS5" DisplayName="Windows 10 RS5 (10.0.17763, 0x0A004563)" />
+    <EnumValue Name="NT_VERSION_WIN10_1803" DisplayName="Windows 10 1803 (10.0.17134, 0x0A0042EE)" />
+    <EnumValue Name="NT_VERSION_WIN10_RS4" DisplayName="Windows 10 RS4 (10.0.17134, 0x0A0042EE)" />
+    <EnumValue Name="NT_VERSION_WIN10_1709" DisplayName="Windows 10 1709 (10.0.16299, 0x0A003FAB)" />
+    <EnumValue Name="NT_VERSION_WIN10_RS3" DisplayName="Windows 10 RS3 (10.0.16299, 0x0A003FAB)" />
+    <EnumValue Name="NT_VERSION_WIN10_1703" DisplayName="Windows 10 1703 (10.0.15063, 0x0A003AD7)" />
+    <EnumValue Name="NT_VERSION_WIN10_RS2" DisplayName="Windows 10 RS2 (10.0.15063, 0x0A003AD7)" />
+    <EnumValue Name="NT_VERSION_WIN10_1607" DisplayName="Windows 10 1607 (10.0.14393, 0x0A003839)" />
+    <EnumValue Name="NT_VERSION_WIN10_RS1" DisplayName="Windows 10 RS1 (10.0.14393, 0x0A003839)" />
+    <EnumValue Name="NT_VERSION_WIN10_1511" DisplayName="Windows 10 1511 (10.0.10586, 0x0A00295A)" />
+    <EnumValue Name="NT_VERSION_WIN10_TH2" DisplayName="Windows 10 TH2 (10.0.10586, 0x0A00295A)" />
+    <EnumValue Name="NT_VERSION_WIN10_1507" DisplayName="Windows 10 1507 (10.0.10240, 0x0A002800)" />
+    <EnumValue Name="NT_VERSION_WIN10_TH" DisplayName="Windows 10 TH (10.0.10240, 0x0A002800)" />
+    <EnumValue Name="NT_VERSION_WIN10" DisplayName="Windows 10 (10.0.0, 0x0A000000)" IsDefault="true" />
+    <EnumValue Name="NT_VERSION_WINBLUE" DisplayName="Windows 8.1 (6.3.0, 0x06030000)" />
+    <EnumValue Name="NT_VERSION_WIN8" DisplayName="Windows 8 (6.2.0, 0x06020000)" />
+    <EnumValue Name="NT_VERSION_WIN7" DisplayName="Windows 7 (6.1.0, 0x06010000)" />
+    <EnumValue Name="NT_VERSION_VISTA" DisplayName="Windows Vista (6.0.0, 0x06000000)" />
+    <EnumValue Name="NT_VERSION_WS2K3" DisplayName="Windows Server 2003 / Windows XP x64 (5.2.0, 0x05020000)" />
+    <EnumValue Name="NT_VERSION_WINXP" DisplayName="Windows XP (5.1.0, 0x05010000)" />
+    <EnumValue Name="NT_VERSION_WIN2K" DisplayName="Windows 2000 (5.0.0, 0x05000000)" />
+  </EnumProperty>
+
+  <BoolProperty Name="OptimizeGlobalData"
+                DisplayName="Optimize Global Data"
+                Description="Pass /Gw to compile global data into individual COMDAT sections when enabled."
+                Category="Compiler" />
+
+  <BoolProperty Name="OmitCoffGroupInfo"
+                DisplayName="Omit COFF Group Information"
+                Description="Pass /NOCOFFGRPINFO when linking a Release image. Ignored when PGO is enabled."
+                Category="Linker" />
+
+  <BoolProperty Name="OmitRichHeader"
+                DisplayName="Omit Rich Header"
+                Description="Pass the undocumented /EMITTOOLVERSIONINFO:NO option to omit the Rich Header from a Release image. Ignored when PGO is enabled."
+                Category="Linker" />
+</Rule>

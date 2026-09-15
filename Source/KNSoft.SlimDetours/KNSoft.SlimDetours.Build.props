@@ -1,4 +1,7 @@
 <Project>
+    <PropertyGroup>
+        <KnsoftTargetNtVersionMin Condition="'$(KnsoftTargetNtVersionMin)' == ''">NT_VERSION_WIN7</KnsoftTargetNtVersionMin>
+    </PropertyGroup>
     <ItemDefinitionGroup>
         <ClCompile>
             <PreprocessorDefinitions>_USE_KNSOFT_NDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>

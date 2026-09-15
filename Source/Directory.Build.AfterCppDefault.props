@@ -8,7 +8,7 @@
     <PropertyGroup Label="Configuration">
         <CharacterSet>Unicode</CharacterSet>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+    <PropertyGroup Condition="$(Configuration.Contains(`Debug`))" Label="Configuration">
         <UseDebugLibraries>true</UseDebugLibraries>
     </PropertyGroup>
 </Project>

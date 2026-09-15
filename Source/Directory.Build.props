@@ -27,27 +27,27 @@
         <MASM>
             <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
         </MASM>
-        <!-- FIXME: CL preprocessor may break this
         <MARMASM>
-            <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
+            <PreprocessedFileName>$(IntDir)%(RelativeDir)%(FileName)%(Extension)</PreprocessedFileName>
+            <PreprocessOutputPath>$(IntDir)%(RelativeDir)%(FileName)%(Extension)</PreprocessOutputPath>
+            <ObjectFileName>%(RootDir)%(Directory)%(FileName).obj</ObjectFileName>
         </MARMASM>
-        -->
     </ItemDefinitionGroup>
 
     <!-- Enable Safe SEH for MASM Release x86, as well as CL default -->
-    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ItemDefinitionGroup Condition="$(Configuration.Contains(`Release`)) and '$(Platform)' == 'Win32'">
         <MASM>
             <UseSafeExceptionHandlers>true</UseSafeExceptionHandlers>
         </MASM>
     </ItemDefinitionGroup>
 
     <!-- Use static runtime libraries -->
-    <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ItemDefinitionGroup Condition="$(Configuration.Contains(`Release`))">
         <ClCompile>
             <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
         </ClCompile>
     </ItemDefinitionGroup>
-    <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ItemDefinitionGroup Condition="$(Configuration.Contains(`Debug`))">
         <ClCompile>
             <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
         </ClCompile>
@@ -60,8 +60,11 @@
         </Link>
     </ItemDefinitionGroup>
 
-    <!-- Disable LTCG and ignore default libraries for LIB -->
+    <!-- Disable LTCG and default library directives for static libraries -->
     <ItemDefinitionGroup Condition="'$(ConfigurationType)' == 'StaticLibrary'">
+        <ClCompile>
+            <OmitDefaultLibName>true</OmitDefaultLibName>
+        </ClCompile>
         <Lib>
             <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
             <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
@@ -76,9 +79,17 @@
         <ForceImportAfterCppProps>$(MsbuildThisFileDirectory)\Directory.Build.AfterCpp.props</ForceImportAfterCppProps>
     </PropertyGroup>
 
-    <!-- Import $(MSBuildProjectName).Build.(props/targets) if exists -->
+    <!-- Import $(MSBuildProjectName).Build.props if exists -->
     <Import Project="$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.props" Condition="Exists('$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.props')"/>
-    <Import Project="$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.targets" Condition="Exists('$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.targets')"/>
+
+    <!-- Fall back to an early import when a caller-provided ForceImportAfterCppTargets hook already occupies the late import. -->
+    <Import Project="$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.targets" Condition="'$(ForceImportAfterCppTargets)' != '' and Exists('$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.targets')"/>
+
+    <PropertyGroup>
+        <!-- Import project-specific targets after Microsoft.Cpp.targets so their build dependency customizations are not overwritten.
+             Preserve a caller-provided ForceImportAfterCppTargets hook. -->
+        <ForceImportAfterCppTargets Condition="'$(ForceImportAfterCppTargets)' == '' and Exists('$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.targets')">$(MSBuildProjectDirectory)\$(MSBuildProjectName).Build.targets</ForceImportAfterCppTargets>
+    </PropertyGroup>
     
     <!-- Import outer Directory.Build.props if exists -->
     <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" Condition="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../')) != ''" />
