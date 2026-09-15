@@ -41,9 +41,13 @@ jobs:
         .\Source\OutDir\${{matrix.platform}}\${{matrix.config}}\Demo.exe -Run OutputDebugStringHook -Engine=SlimDetours
     - name: Build [NT5, x64/x86]
       if: ${{ matrix.platform == 'x64' || matrix.platform == 'x86' }}
+      env:
+        CL: /D_WIN32_WINNT=0x0500
       run: |
-          set CL=/D_WIN32_WINNT=0x0500
-          msbuild .\Source\KNSoft.SlimDetours.sln /restore /m /p:Configuration=${{matrix.config}} /p:Platform=${{matrix.platform}} /p:RestorePackagesConfig=true
+        foreach ($Project in '.\Source\KNSoft.SlimDetours\KNSoft.SlimDetours.vcxproj', '.\Source\Demo\Demo.vcxproj') {
+          msbuild $Project /restore /t:Rebuild /m /p:Configuration=${{matrix.config}} /p:Platform=${{ matrix.platform == 'x86' && 'Win32' || matrix.platform }} /p:RestorePackagesConfig=true "/p:SolutionDir=$env:GITHUB_WORKSPACE\Source\"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
     - name: Run Unit Test [NT5, x64/x86]
       if: ${{ matrix.platform == 'x64' || matrix.platform == 'x86' }}
       run: |
