@@ -62,11 +62,40 @@ SlimDetoursAttach(
     _Inout_ PVOID* ppPointer,
     _In_ PVOID pDetour);
 
+typedef struct _DETOUR_DETACH_OPTIONS
+{
+    // Receives the trampoline of the detached hook, to be released by the caller with
+    // SlimDetoursFreeTrampoline, or NULL to let the transaction release it. It is written when the
+    // transaction commits, so the variable must stay alive until then, and is set to NULL when
+    // there is no trampoline to release.
+    PVOID* ppTrampolineToFreeManually;
+} DETOUR_DETACH_OPTIONS, *PDETOUR_DETACH_OPTIONS;
+
+typedef const DETOUR_DETACH_OPTIONS* PCDETOUR_DETACH_OPTIONS;
+
 HRESULT
 NTAPI
+SlimDetoursDetachEx(
+    _Inout_ PVOID* ppPointer,
+    _In_ PVOID pDetour,
+    _In_ PCDETOUR_DETACH_OPTIONS pOptions);
+
+FORCEINLINE
+HRESULT
 SlimDetoursDetach(
     _Inout_ PVOID* ppPointer,
-    _In_ PVOID pDetour);
+    _In_ PVOID pDetour)
+{
+    DETOUR_DETACH_OPTIONS Options;
+    Options.ppTrampolineToFreeManually = NULL;
+    return SlimDetoursDetachEx(ppPointer, pDetour, &Options);
+}
+
+// Release a trampoline taken over via DETOUR_DETACH_OPTIONS.
+HRESULT
+NTAPI
+SlimDetoursFreeTrampoline(
+    _Frees_ptr_opt_ _Post_invalid_ PVOID pTrampoline);
 
 PVOID
 NTAPI
