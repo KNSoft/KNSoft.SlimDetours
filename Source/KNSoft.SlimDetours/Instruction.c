@@ -153,6 +153,29 @@ detour_gen_jmp_indirect(
     return pbCode + sizeof(INT32);
 }
 
+#if defined(_M_X64)
+
+_Ret_notnull_
+PBYTE
+detour_gen_jmp_aligned_literal(
+    _In_ PBYTE pbCode,
+    _In_ PBYTE pbJmpVal)
+{
+    // The destination is stored inline, aligned and behind the jump, so it can be anywhere.
+    DETOUR_ASSERT(((ULONG_PTR)pbCode & (sizeof(PBYTE) - 1)) == 0);
+
+    *pbCode++ = 0xff;   // jmp [+imm32]
+    *pbCode++ = 0x25;
+    *((INT32*)pbCode) = 2;
+    pbCode += sizeof(INT32);
+    *pbCode++ = 0xcc;   // brk;
+    *pbCode++ = 0xcc;   // brk;
+    *((PBYTE*)pbCode) = pbJmpVal;
+    return pbCode + sizeof(PBYTE);
+}
+
+#endif
+
 BOOL
 detour_is_jmp_indirect_to(
     _In_ PBYTE pbCode,

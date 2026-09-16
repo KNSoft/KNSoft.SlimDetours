@@ -5,6 +5,7 @@
     <ClCompile Include="DeadLock.c" />
     <ClCompile Include="DelayHook.c" />
     <ClCompile Include="TwiceSimpleHook.c" />
+    <ClCompile Include="ChainedHook.c" />
     <ClCompile Include="Instruction.c" />
     <ClCompile Include="COMHook.c" />
     <ClCompile Include="OutputDebugStringHook.c" />

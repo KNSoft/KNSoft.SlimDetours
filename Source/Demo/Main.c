@@ -9,6 +9,7 @@ TEST_DECL_FUNC(OutputDebugStringHook);
 
 /* Auto tests */
 TEST_DECL_FUNC(TwiceSimpleHook);
+TEST_DECL_FUNC(ChainedHook);
 TEST_DECL_FUNC(Instruction);
 #if _WIN32_WINNT >= _WIN32_WINNT_WIN6
 TEST_DECL_FUNC(DelayHook);
@@ -22,6 +23,7 @@ CONST UNITTEST_ENTRY UnitTestList[] = {
 #endif
 
     TEST_DECL_ENTRY(TwiceSimpleHook),
+    TEST_DECL_ENTRY(ChainedHook),
     TEST_DECL_ENTRY(Instruction),
 #if _WIN32_WINNT >= _WIN32_WINNT_WIN6
     TEST_DECL_ENTRY(DelayHook),
