@@ -1739,27 +1739,16 @@ CopyVexEvexCommon(
             break;
     }
 
-    // see https://software.intel.com/content/www/us/en/develop/download/intel-avx512-fp16-architecture-specification.html
-    // EVEX maps (with FP16 and APX mmm-bit extension):
-    //   mmm=001 (MAP1) and mmm=101 (MAP5) share the legacy 0F opcode structure,
-    //     so per-opcode sizing must come from g_rceCopyTable0F (e.g. MAP5 C2 /r ib = VCMPPH/VCMPSH).
-    //   mmm=010 (MAP2) and mmm=110 (MAP6) share the legacy 0F 38 structure (ModR/M, no imm).
-    //   mmm=011 (MAP3) has the 0F 3A structure (ModR/M + imm8).
-    //   mmm=100 (MAP4, APX) mirrors legacy MAP0 opcode structure (per-opcode sizing).
     switch (m | fp16)
     {
-        case 5:
         case 1:
             // Opcodes whose legacy 0F entry does not describe the form an
             // escape reaches: 37 is GETSEC and takes no ModR/M, 38 and 3A are
             // the three-byte escapes, whose entries put ModR/M one place
             // further along, 7A and 7B are undefined, and 78 is extrq/insertq
             // off a real 66 or F2, where under an escape pp is a mandatory
-            // prefix. VEX defines none of the six and its maps are closed, so
-            // there they are refused. The EVEX maps are still growing, and
-            // nearly everything in map 1 and map 5 is a plain ModR/M, so an
-            // opcode this table has not caught up with is measured as one
-            // rather than refused.
+            // prefix. Refuse these six under VEX MAP1; under EVEX MAP1,
+            // measure them as an opcode and ModR/M.
             if (pbSrc[0] == 0x37 || pbSrc[0] == 0x38 || pbSrc[0] == 0x3A ||
                 pbSrc[0] == 0x78 || pbSrc[0] == 0x7A || pbSrc[0] == 0x7B)
             {
@@ -1771,11 +1760,13 @@ CopyVexEvexCommon(
             }
             ce = &g_rceCopyMap[g_rceCopyTable0F[pbSrc[0]]];
             return ce->pfCopy(pDisasm, ce, pbDst, pbSrc);
-        case 6:
         case 2:
-            return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytes2Mod], pbDst, pbSrc); /* 38 ceF38 */
-        case 3:
-            return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytes2Mod1], pbDst, pbSrc); /* 3A ceF3A */
+        case 5:
+        case 6:
+            // EVEX MAP5 and MAP6 use ModR/M without an immediate, just like MAP2.
+            return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytes2Mod], pbDst, pbSrc);
+        case 3: // 0F3A: ModR/M + imm8, including VCMPPH and VCMPSH.
+            return CopyBytes(pDisasm, &g_rceCopyMap[eENTRY_CopyBytes2Mod1], pbDst, pbSrc);
         case 4:
             // APX promotes legacy instructions into map 4, but the map is its
             // own opcode space rather than a copy of the legacy one-byte one:
