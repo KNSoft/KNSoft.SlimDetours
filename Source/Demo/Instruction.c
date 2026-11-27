@@ -98,6 +98,38 @@ TEST_FUNC(Instruction)
     HRESULT hr;
     FN_INSTRUCTION *pfn1, *pfn2;
 
+#if defined(_M_IX86) || (defined(_M_X64) && !defined(_M_ARM64EC))
+    // Decode data only; these tests do not require AVX-512 or AVX10 hardware.
+    struct
+    {
+        BYTE Length;
+        BYTE Code[16];
+    } Cases[] = {
+        { 6,  { 0x62, 0xF5, 0x7E, 0x08, 0x39, 0xC1 } }, // MAP5 VCVTPS2BF8
+        { 11, { 0x62, 0xF5, 0x7E, 0x08, 0x39, 0x84, 0x4B, 1, 2, 3, 4 } }, // SIB + disp32
+        { 6,  { 0x62, 0xF5, 0x7D, 0x48, 0x78, 0xC1 } }, // MAP5 VCVTTPH2UQQ
+        { 6,  { 0x62, 0xF5, 0x7F, 0x48, 0x7A, 0xC0 } }, // MAP5 VCVTUDQ2PH
+        { 6,  { 0x62, 0xF5, 0x7D, 0x48, 0x7B, 0xC0 } }, // MAP5 VCVTPH2QQ
+        { 6,  { 0x62, 0xF1, 0x7D, 0x48, 0x78, 0xC1 } }, // MAP1 VCVTTPS2UQQ
+        { 7,  { 0x62, 0xF3, 0x7C, 0x48, 0xC2, 0xC1, 5 } }, // MAP3 VCMPPH + imm8
+    };
+    for (ULONG i = 0; i < ARRAYSIZE(Cases); i++)
+    {
+        BYTE Dst[sizeof(Cases[i].Code)];
+        PBYTE Src = Cases[i].Code;
+        BYTE Length = Cases[i].Length;
+        RtlFillMemory(Dst, sizeof(Dst), 0xCC);
+        if (SlimDetoursCopyInstruction(Dst, Src, NULL, NULL) == Src + Length &&
+            RtlEqualMemory(Dst, Src, Length) && Dst[Length] == 0xCC)
+        {
+            TEST_RESULT(Pass);
+        } else
+        {
+            TEST_FAIL("Incorrect copy for EVEX map %u opcode %02X (expected %u bytes)", Src[1] & 7, Src[4], Length);
+        }
+    }
+#endif
+
 #if defined(_M_ARM64EC)
     PVOID pEcCode = NULL;
     PVOID pX64Code = NULL;
